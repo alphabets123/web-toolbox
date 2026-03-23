@@ -55,7 +55,13 @@
     <div class="sidebar" id="sidebar">
         <div style="margin-bottom: 3rem;">
             <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
-            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-top: 0.2rem; letter-spacing: -0.5px;">딸깍 작업</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+                  <path d="M13 13l6 6"></path>
+                </svg>
+                딸깍 작업
+            </div>
         </div>
         <nav class="nav-menu">
             <a href="index.html" class="nav-item">🏠 대시보드</a>
@@ -67,53 +73,64 @@
     </div>
 
     <div class="main-content">
-        <button class="menu-toggle" id="menuToggle">☰ 메뉴</button>
-        <div class="bg-blob"></div>
-        <div class="bg-blob-2"></div>
+        <!-- Top Header Bar (Dynamic Color Theme: var(--secondary-color)) -->
+        <header class="top-bar" style="--page-theme-color: var(--secondary-color);">
+            <button class="menu-toggle" id="menuToggle">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <span class="top-bar-title">✂️ 배경 제거</span>
+        </header>
 
-        <div class="container" style="max-width: 900px;">
-            <h1>배경화면 제거</h1>
-            <p class="subtitle">AI 기반 초고속 누끼 따기 (100% 프라이빗)</p>
+        <div class="main-content-inner">
+            <div class="bg-blob"></div>
+            <div class="bg-blob-2"></div>
 
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📸</div>
-                <div class="upload-title">이미지를 드래그하거나 여길 클릭하세요</div>
-                <div class="upload-desc">지원 포맷: JPG, PNG, WebP<br>기기의 성능에 따라 다르지만 보통 첫 실행에만 AI 모델 로딩(약 30MB)으로 몇 초 소요되며,<br>이후부터는 1~3초 내에 눈깜짝할 새 처리됩니다!</div>
-                <input type="file" id="fileInput" accept="image/*">
-            </div>
-            
-            <div class="loading" id="loadingArea">
-                <div class="spinner"></div>
-                <div class="loading-text" id="loadingText">브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️</div>
-                <div class="loading-sub">서버 없이 내 PC/스마트폰 성능만으로 이미지를 분석하고 있습니다!<br>절대 파일이 외부로 전송되지 않으니 안심하세요.</div>
-            </div>
+            <div class="container" style="max-width: 900px;">
+                <h1>배경화면 제거</h1>
+                <p class="subtitle">AI 기반 초고속 누끼 따기 (100% 프라이빗)</p>
 
-            <div id="resultArea">
-                <div class="comparison-grid">
-                    <div class="preview-box">
-                        <h4>🖼️ 원본 이미지</h4>
-                        <div class="result-img-wrapper" style="background: rgba(0,0,0,0.02);">
-                            <img id="originalImage" class="result-img" alt="원본">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-title">이미지를 드래그하거나 여길 클릭하세요</div>
+                    <div class="upload-desc">지원 포맷: JPG, PNG, WebP<br>기기의 성능에 따라 다르지만 보통 첫 실행에만 AI 모델 로딩(약 30MB)으로 몇 초 소요되며,<br>이후부터는 1~3초 내에 눈깜짝할 새 처리됩니다!</div>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+                
+                <div class="loading" id="loadingArea">
+                    <div class="spinner"></div>
+                    <div class="loading-text" id="loadingText">브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️</div>
+                    <div class="loading-sub">서버 없이 내 PC/스마트폰 성능만으로 이미지를 분석하고 있습니다!<br>절대 파일이 외부로 전송되지 않으니 안심하세요.</div>
+                </div>
+
+                <div id="resultArea">
+                    <div class="comparison-grid">
+                        <div class="preview-box">
+                            <h4>🖼️ 원본 이미지</h4>
+                            <div class="result-img-wrapper" style="background: rgba(0,0,0,0.02);">
+                                <img id="originalImage" class="result-img" alt="원본">
+                            </div>
+                        </div>
+                        <div class="preview-box">
+                            <h4 style="color: var(--accent-color);">✨ 배경 제거 완료</h4>
+                            <div class="result-img-wrapper checkerboard">
+                                <img id="resultImage" class="result-img" alt="제거됨">
+                            </div>
                         </div>
                     </div>
-                    <div class="preview-box">
-                        <h4 style="color: var(--accent-color);">✨ 배경 제거 완료</h4>
-                        <div class="result-img-wrapper checkerboard">
-                            <img id="resultImage" class="result-img" alt="제거됨">
-                        </div>
+
+                    <div>
+                        <a id="downloadBtn" class="btn-download" download="snaptask_nobg.png">📥 투명 배경으로 고화질 저장</a>
+                        <button id="restartBtn" class="btn-restart">다른 사진 🔄</button>
                     </div>
                 </div>
 
-                <div>
-                    <a id="downloadBtn" class="btn-download" download="snaptask_nobg.png">📥 투명 배경으로 고화질 저장</a>
-                    <button id="restartBtn" class="btn-restart">다른 사진 🔄</button>
+                <div class="highlight-features" id="featuresBottom">
+                    <div class="feature-tag">🔒 서버 전송 없음 (완벽한 사생활 보호)</div>
+                    <div class="feature-tag">💎 무거운 고해상도 이미지도 축소 없이 처리</div>
+                    <div class="feature-tag">🚫 워터마크 없음</div>
                 </div>
-            </div>
-
-            <div class="highlight-features" id="featuresBottom">
-                <div class="feature-tag">🔒 서버 전송 없음 (완벽한 사생활 보호)</div>
-                <div class="feature-tag">💎 무거운 고해상도 이미지도 축소 없이 처리</div>
-                <div class="feature-tag">🚫 워터마크 없음</div>
             </div>
         </div>
     </div>

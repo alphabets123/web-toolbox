@@ -9,7 +9,7 @@
     <style>
         .badge { display: inline-block; padding: 0.5rem 1rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 9999px; color: var(--accent-color); font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem; text-transform: uppercase; }
         h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-color); }
-        p.desc { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 2.5rem; font-weight: 500; }
+        p.desc { font-size: 1.15rem; color: var(--text-muted); margin-bottom: 2.5rem; font-weight: 500; }
         
         .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 0; text-align: left; }
         .tool-card { background: #ffffff; border: 1px solid var(--glass-border); border-radius: 1rem; padding: 1.5rem; text-decoration: none; color: var(--text-color); transition: all 0.3s ease; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
@@ -25,7 +25,13 @@
     <div class="sidebar" id="sidebar">
         <div style="margin-bottom: 3rem;">
             <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
-            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-top: 0.2rem; letter-spacing: -0.5px;">딸깍 작업</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+                  <path d="M13 13l6 6"></path>
+                </svg>
+                딸깍 작업
+            </div>
         </div>
         <nav class="nav-menu">
             <a href="index.html" class="nav-item active">🏠 대시보드</a>
@@ -37,33 +43,44 @@
     </div>
     
     <div class="main-content">
-        <button class="menu-toggle" id="menuToggle">☰ 메뉴</button>
-        <div class="bg-blob"></div>
-        <div class="bg-blob-2"></div>
-        
-        <div class="container">
-            <div class="badge">Cloudflare + Web ML</div>
-            <h1>Snap-Task Dashboard</h1>
-            <p class="desc">설치나 서버 전송 필요 없이, 내 PC 자체 AI로 <strong>딸깍 한 번에</strong> 마무리하는 필수 도구.</p>
+        <!-- Top Header Bar (Dynamic Color Theme: var(--accent-color)) -->
+        <header class="top-bar" style="--page-theme-color: var(--accent-color);">
+            <button class="menu-toggle" id="menuToggle">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <span class="top-bar-title">🏠 대시보드</span>
+        </header>
+
+        <div class="main-content-inner">
+            <div class="bg-blob"></div>
+            <div class="bg-blob-2"></div>
             
-            <div class="tool-grid">
-                <a href="bg-remove.html" class="tool-card">
-                    <div class="icon">✂️</div>
-                    <h3>배경 제거 (누끼 따기)</h3>
-                    <p>이미지 크기 무제한, 무손실 고화질 다운로드. 완벽한 프라이버시.</p>
-                </a>
+            <div class="container">
+                <div class="badge">Cloudflare + Web ML</div>
+                <h1>Snap-Task Dashboard</h1>
+                <p class="desc">설치나 서버 전송 필요 없이, 내 PC 자체 AI로 <strong>딸깍 한 번에</strong> 마무리하는 필수 도구.</p>
                 
-                <a href="#" class="tool-card disabled">
-                    <div class="icon">🎬</div>
-                    <h3>동영상 구간 자르기 (준비중)</h3>
-                    <p>내장된 WebAssembly 엔진을 통해 브라우저에서 직접 빠른 컷편집.</p>
-                </a>
-                
-                <a href="#" class="tool-card disabled">
-                    <div class="icon">⬇️</div>
-                    <h3>유튜브 영상 다운 (준비중)</h3>
-                    <p>복잡한 설치나 광고가 범벅된 사이트 방문 없이 안전한 원클릭 다운로드.</p>
-                </a>
+                <div class="tool-grid">
+                    <a href="bg-remove.html" class="tool-card">
+                        <div class="icon">✂️</div>
+                        <h3>배경 제거 (누끼 따기)</h3>
+                        <p>이미지 크기 무제한, 무손실 고화질 다운로드. 완벽한 프라이버시.</p>
+                    </a>
+                    
+                    <a href="#" class="tool-card disabled">
+                        <div class="icon">🎬</div>
+                        <h3>동영상 구간 자르기 (준비중)</h3>
+                        <p>내장된 WebAssembly 엔진을 통해 브라우저에서 직접 빠른 컷편집.</p>
+                    </a>
+                    
+                    <a href="#" class="tool-card disabled">
+                        <div class="icon">⬇️</div>
+                        <h3>유튜브 영상 다운 (준비중)</h3>
+                        <p>복잡한 설치나 광고가 범벅된 사이트 방문 없이 안전한 원클릭 다운로드.</p>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

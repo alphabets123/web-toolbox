@@ -147,9 +147,13 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mobile Responsive Design */
+/* Mobile Responsive Design and Desktop Sidebar Toggle */
+.sidebar {
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .menu-toggle {
-    display: none;
+    display: flex;
     background: transparent;
     border: none;
     font-size: 1.1rem;
@@ -160,13 +164,19 @@ body {
     padding: 0.5rem;
     border-radius: 0.5rem;
     align-self: flex-start;
-    display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
 .menu-toggle:hover {
     background: rgba(0,0,0,0.05);
+}
+
+/* Desktop specific behavior */
+@media (min-width: 769px) {
+    .sidebar.collapsed {
+        margin-left: calc(-1 * var(--sidebar-width));
+    }
 }
 
 .sidebar-overlay {
@@ -181,17 +191,12 @@ body {
 }
 
 @media (max-width: 768px) {
-    .menu-toggle {
-        display: flex; /* Mobile default visible */
-    }
-    /* Hide desktop version of menu config if needed, handled by .menu-toggle display rules */
     .sidebar {
         position: fixed;
         left: -100%;
         top: 0;
         height: 100vh;
-        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        width: 280px;
+        z-index: 100;
     }
     .sidebar.open {
         left: 0;
@@ -199,6 +204,7 @@ body {
     .sidebar-overlay.open {
         display: block;
         opacity: 1;
+        z-index: 50;
     }
     .main-content {
         padding: 1rem;
@@ -208,10 +214,5 @@ body {
     }
     h1 {
         font-size: 2rem;
-    }
-}
-@media (min-width: 769px) {
-    .menu-toggle {
-        display: none !important;
     }
 }

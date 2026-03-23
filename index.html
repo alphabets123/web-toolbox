@@ -70,8 +70,12 @@
     
     <script>
         document.getElementById('menuToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.add('open');
-            document.getElementById('sidebarOverlay').classList.add('open');
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('open');
+                document.getElementById('sidebarOverlay').classList.add('open');
+            } else {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+            }
         });
         document.getElementById('sidebarOverlay').addEventListener('click', function() {
             document.getElementById('sidebar').classList.remove('open');

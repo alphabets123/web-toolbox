@@ -1,0 +1,15 @@
+node_modules/
+.vscode/
+.DS_Store
+*.log
+tmp/
+.gemini/
+.agent/
+.agents/
+_agent/
+_agents/
+brain/
+implementation_plan.md
+walkthrough.md
+task.md
+web-toolbox.code-workspace

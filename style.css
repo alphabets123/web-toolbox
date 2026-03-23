@@ -1,11 +1,12 @@
 :root {
-    --bg-color: #050505;
-    --sidebar-bg: #0a0a0a;
-    --accent-color: #6366f1;
-    --secondary-color: #ec4899;
-    --text-color: #ffffff;
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --bg-color: #f8fafc; /* Very light cool gray */
+    --sidebar-bg: #ffffff;
+    --accent-color: #4f46e5; /* Indigo */
+    --secondary-color: #ec4899; /* Pink */
+    --text-color: #1e293b; /* Slate dark */
+    --text-muted: #64748b; /* Slate gray */
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(0, 0, 0, 0.08);
     --sidebar-width: 260px;
 }
 
@@ -32,7 +33,7 @@ body {
     height: 600px;
     background: radial-gradient(circle, var(--accent-color) 0%, transparent 60%);
     filter: blur(100px);
-    opacity: 0.15;
+    opacity: 0.1;
     z-index: -1;
     animation: move 25s infinite alternate;
 }
@@ -45,7 +46,7 @@ body {
     height: 500px;
     background: radial-gradient(circle, var(--secondary-color) 0%, transparent 60%);
     filter: blur(100px);
-    opacity: 0.1;
+    opacity: 0.08;
     z-index: -1;
     animation: move 20s infinite alternate-reverse;
 }
@@ -64,6 +65,7 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 10;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.02);
 }
 
 .sidebar .brand {
@@ -89,20 +91,20 @@ body {
     padding: 1rem;
     border-radius: 0.75rem;
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-muted);
     font-weight: 600;
     transition: all 0.2s ease;
 }
 
 .nav-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--text-color);
 }
 
 .nav-item.active {
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(99, 102, 241, 0.1);
     color: var(--accent-color);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .nav-item.disabled {
@@ -114,7 +116,7 @@ body {
 .sidebar-footer {
     margin-top: auto;
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-muted);
 }
 
 /* Main Content Area */
@@ -133,7 +135,7 @@ body {
     border: 1px solid var(--glass-border);
     border-radius: 1.5rem;
     padding: 3rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
     width: 100%;
     max-width: 900px;
     animation: fadeIn 0.8s ease-out;

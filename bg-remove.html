@@ -102,6 +102,10 @@
         const loadingText = document.getElementById('loadingText');
         const featuresBottom = document.getElementById('featuresBottom');
 
+        // 전체 화면에서 실수로 드래그 앤 드롭했을 때 브라우저가 사진을 열어버리는 현상 방지
+        window.addEventListener('dragover', (e) => e.preventDefault(), false);
+        window.addEventListener('drop', (e) => e.preventDefault(), false);
+
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
         uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));

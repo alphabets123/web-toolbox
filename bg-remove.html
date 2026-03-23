@@ -4,31 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>배경 제거 - Snap-Task</title>
+    <!-- 딸깍 파비콘 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- JSZip 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text-color); }
-        .subtitle { color: var(--accent-color); font-weight: 700; margin-bottom: 2.5rem; }
+        h1 { font-size: 2.3rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text-color); }
+        .subtitle { color: var(--accent-color); font-weight: 700; margin-bottom: 1.5rem; }
         
-        .upload-area { border: 2px dashed rgba(0,0,0,0.15); border-radius: 1rem; padding: 4rem 2rem; cursor: pointer; transition: all 0.3s ease; background: #ffffff; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .upload-area { border: 2px dashed rgba(0,0,0,0.15); border-radius: 1rem; padding: 3rem 2rem; cursor: pointer; transition: all 0.3s ease; background: #ffffff; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.02); text-align: center; }
         .upload-area:hover, .upload-area.dragover { border-color: var(--accent-color); background: rgba(99, 102, 241, 0.05); box-shadow: 0 10px 20px rgba(99,102,241,0.06); }
-        .upload-icon { font-size: 3.5rem; margin-bottom: 1rem; }
-        .upload-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-color); }
-        .upload-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; font-weight: 500; }
+        .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .upload-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-color); }
+        .upload-desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; font-weight: 500; }
         
         .highlight-features { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
-        .feature-tag { background: #f0fdf4; color: #166534; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 700; border: 1px solid #bbf7d0; }
-        #fileInput { display: none; }
+        .feature-tag { background: #f0fdf4; color: #166534; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; border: 1px solid #bbf7d0; }
         
+        #fileInputSingle, #fileInputBatch { display: none; }
+        
+        /* Single Mode specific */
         #resultArea { display: none; margin-top: 1rem; }
         .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
         @media (max-width: 650px) { .comparison-grid { grid-template-columns: 1fr; } }
         .preview-box { text-align: center; }
-        .preview-box h4 { margin-bottom: 0.75rem; font-size: 1.1rem; color: var(--text-color); font-weight: 700; }
-        .result-img-wrapper { width: 100%; height: 350px; display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 0.5rem; background: #ffffff; border: 1px solid var(--glass-border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .preview-box h4 { margin-bottom: 0.75rem; font-size: 1rem; color: var(--text-color); font-weight: 700; }
+        .result-img-wrapper { width: 100%; height: 320px; display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 0.5rem; background: #ffffff; border: 1px solid var(--glass-border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .result-img { max-width: 100%; max-height: 100%; object-fit: contain; }
         
-        /* 투명도를 나타내기 위한 포토샵 스타일 체커보드 패턴 */
+        /* Batch Mode specific */
+        #batchProcessArea { display: none; margin-top: 1.5rem; width: 100%; text-align: left; }
+        .batch-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .batch-header h3 { font-size: 1.1rem; color: var(--accent-color); font-weight: 800; }
+        .btn-zip { background: #10b981; color: white; padding: 0.6rem 1.2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 700; cursor: pointer; border: none; font-size: 0.9rem; transition: background 0.2s; display: none; }
+        .btn-zip:hover { background: #059669; }
+        
         .checkerboard {
             background-color: #f8fafc;
             background-image: 
@@ -38,27 +50,25 @@
             background-position: 0 0, 10px 10px;
         }
         
-        .btn-download { display: inline-block; padding: 1rem 2rem; background: var(--accent-color); color: white; text-decoration: none; border-radius: 1rem; font-weight: 700; transition: background 0.3s; cursor: pointer; border: none; font-size: 1rem; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3); }
+        .btn-download { display: inline-block; padding: 0.8rem 1.5rem; background: var(--accent-color); color: white; text-decoration: none; border-radius: 1rem; font-weight: 700; transition: background 0.3s; cursor: pointer; border: none; font-size: 1rem; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3); }
         .btn-download:hover { background: #4338ca; transform: translateY(-2px); }
-        .btn-restart { display: inline-block; padding: 1rem 1.5rem; background: #e2e8f0; color: var(--text-color); text-decoration: none; border-radius: 1rem; font-weight: 700; margin-left: 1rem; transition: background 0.3s; cursor: pointer; border: none; }
+        .btn-restart { display: inline-block; padding: 0.8rem 1.25rem; background: #e2e8f0; color: var(--text-color); text-decoration: none; border-radius: 1rem; font-weight: 700; margin-left: 0.8rem; transition: background 0.3s; cursor: pointer; border: none; }
         .btn-restart:hover { background: #cbd5e1; }
         
         .loading { display: none; margin-top: 2rem; }
         .spinner { border: 4px solid #e2e8f0; border-left-color: var(--accent-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-text { color: var(--accent-color); font-weight: 800; font-size: 1.1rem; }
-        .loading-sub { color: var(--text-muted); font-weight: 500; font-size: 0.95rem; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="sidebar" id="sidebar">
-        <div style="margin-bottom: 3rem;">
+        <div style="margin-bottom: 2.5rem;">
             <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
             <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
-                  <path d="M13 13l6 6"></path>
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
                 </svg>
                 딸깍 작업
             </div>
@@ -69,14 +79,16 @@
             <a href="#" class="nav-item disabled">🎬 동영상 컷편집</a>
             <a href="#" class="nav-item disabled">⬇️ 유튜브 다운</a>
         </nav>
-        <div class="sidebar-footer">&copy; 2026 Snap-Task.<br>No Server Uploads.</div>
+        <div class="sidebar-footer">
+            <!-- (추후 광고 추가를 위해 주석 처리) <div class="ad-sidebar-box">Ad Space</div> -->
+            &copy; 2026 Snap-Task.<br>No Server Uploads.
+        </div>
     </div>
 
     <div class="main-content">
-        <!-- Top Header Bar (Dynamic Color Theme: var(--secondary-color)) -->
-        <header class="top-bar" style="--page-theme-color: var(--secondary-color);">
+        <header class="top-bar" style="--page-theme-gradient: linear-gradient(135deg, #ec4899, #ec4899, #d946ef);">
             <button class="menu-toggle" id="menuToggle">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
             </button>
@@ -86,51 +98,96 @@
         <div class="main-content-inner">
             <div class="bg-blob"></div>
             <div class="bg-blob-2"></div>
+            
+            <div class="content-wrapper">
+                <div class="container" style="text-align: center;">
+                    <h1>배경화면 제거</h1>
+                    <p class="subtitle">AI 기반 초고속 누끼 따기 (100% 프라이빗)</p>
 
-            <div class="container" style="max-width: 900px;">
-                <h1>배경화면 제거</h1>
-                <p class="subtitle">AI 기반 초고속 누끼 따기 (100% 프라이빗)</p>
+                    <!-- Tabs -->
+                    <div class="tabs-container" style="margin: 0 auto 2rem auto;">
+                        <button class="tab-btn active" id="tabSingleMode">단일 이미지 (1장)</button>
+                        <button class="tab-btn" id="tabBatchMode">다중 일괄 처리 (최대 10장)</button>
+                    </div>
 
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📸</div>
-                    <div class="upload-title">이미지를 드래그하거나 여길 클릭하세요</div>
-                    <div class="upload-desc">지원 포맷: JPG, PNG, WebP<br>기기의 성능에 따라 다르지만 보통 첫 실행에만 AI 모델 로딩(약 30MB)으로 몇 초 소요되며,<br>이후부터는 1~3초 내에 눈깜짝할 새 처리됩니다!</div>
-                    <input type="file" id="fileInput" accept="image/*">
+                    <!-- ================= SINGLE MODE ================= -->
+                    <div id="modeSingleBox">
+                        <div class="upload-area" id="uploadAreaSingle">
+                            <div class="upload-icon">📸</div>
+                            <div class="upload-title">이미지 1장을 드래그하거나 여길 클릭하세요</div>
+                            <div class="upload-desc">
+                                지원 포맷: JPG, PNG, WebP<br>처음 실행시 처리모델 로딩으로 몇초 소요될수 있습니다.
+                                <div style="margin-top: 1.5rem; color: #b45309; background: #fffbeb; padding: 0.8rem 1.2rem; border-radius: 0.6rem; font-size: 0.85rem; border: 1px solid #fde68a; display: inline-block; line-height: 1.6;">
+                                    <strong style="color: #92400e;">💡 최적의 결과를 위한 팁</strong><br>
+                                    현재 데스크톱용 '가벼운 엣지 AI 모델'을 사용하므로 <strong>인물(증명사진), 뚜렷한 사물, 제품 사진</strong>에서 최상의 품질을 보여줍니다.<br>
+                                    <em>(복잡한 풍경이나 윤곽이 모호한 사진은 엉뚱하게 오려질 수 있습니다.)</em>
+                                </div>
+                            </div>
+                            <input type="file" id="fileInputSingle" accept="image/*">
+                        </div>
+                        
+                        <div class="loading" id="loadingAreaSingle">
+                            <div class="spinner"></div>
+                            <div class="loading-text" id="loadingTextSingle">브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️</div>
+                        </div>
+
+                        <div id="resultArea">
+                            <div class="comparison-grid">
+                                <div class="preview-box">
+                                    <h4>🖼️ 원본 이미지</h4>
+                                    <div class="result-img-wrapper" style="background: rgba(0,0,0,0.02);">
+                                        <img id="originalImage" class="result-img" alt="원본">
+                                    </div>
+                                </div>
+                                <div class="preview-box">
+                                    <h4 style="color: var(--accent-color);">✨ 배경 제거 완료</h4>
+                                    <div class="result-img-wrapper checkerboard">
+                                        <img id="resultImage" class="result-img" alt="제거됨">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <a id="downloadBtn" class="btn-download" download="snaptask_nobg.png">📥 투명 배경으로 저장</a>
+                                <button id="restartBtnSingle" class="btn-restart">다른 사진 🔄</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= BATCH MODE ================= -->
+                    <div id="modeBatchBox" style="display: none;">
+                        <div class="upload-area" id="uploadAreaBatch">
+                            <div class="upload-icon">📂</div>
+                            <div class="upload-title">여러 장을 긁어 드래그하거나 여기를 클릭하세요</div>
+                            <div class="upload-desc">
+                                <strong>최대 10장 지원</strong> (PC 메모리 및 퍼포먼스 보호용 제한)<br>
+                                일괄 처리가 완료되면 압축(.zip) 파일로 한 번에 다운로드 받을 수 있습니다.
+                            </div>
+                            <input type="file" id="fileInputBatch" accept="image/*" multiple>
+                        </div>
+                        
+                        <div id="batchProcessArea">
+                            <div class="batch-header">
+                                <h3 id="batchStatusTitle">🕒 대기 중...</h3>
+                                <button id="btnZipDownload" class="btn-zip">📦 압축파일(ZIP) 다운로드</button>
+                                <button id="restartBtnBatch" class="btn-restart" style="display: none; padding: 0.6rem 1rem; font-size: 0.9rem;">처음부터 다시 🔄</button>
+                            </div>
+                            
+                            <div class="batch-list" id="batchListContainer">
+                                <!-- 항목들이 자바스크립트에 의해 추가됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="highlight-features" id="featuresBottom">
+                        <div class="feature-tag">🔒 서버전송없음(사진유출보호)</div>
+                        <div class="feature-tag">💎 해상도는 원본그대로 저장</div>
+                        <div class="feature-tag">🚫 워터마크없음</div>
+                    </div>
                 </div>
                 
-                <div class="loading" id="loadingArea">
-                    <div class="spinner"></div>
-                    <div class="loading-text" id="loadingText">브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️</div>
-                    <div class="loading-sub">서버 없이 내 PC/스마트폰 성능만으로 이미지를 분석하고 있습니다!<br>절대 파일이 외부로 전송되지 않으니 안심하세요.</div>
-                </div>
-
-                <div id="resultArea">
-                    <div class="comparison-grid">
-                        <div class="preview-box">
-                            <h4>🖼️ 원본 이미지</h4>
-                            <div class="result-img-wrapper" style="background: rgba(0,0,0,0.02);">
-                                <img id="originalImage" class="result-img" alt="원본">
-                            </div>
-                        </div>
-                        <div class="preview-box">
-                            <h4 style="color: var(--accent-color);">✨ 배경 제거 완료</h4>
-                            <div class="result-img-wrapper checkerboard">
-                                <img id="resultImage" class="result-img" alt="제거됨">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <a id="downloadBtn" class="btn-download" download="snaptask_nobg.png">📥 투명 배경으로 고화질 저장</a>
-                        <button id="restartBtn" class="btn-restart">다른 사진 🔄</button>
-                    </div>
-                </div>
-
-                <div class="highlight-features" id="featuresBottom">
-                    <div class="feature-tag">🔒 서버 전송 없음 (완벽한 사생활 보호)</div>
-                    <div class="feature-tag">💎 무거운 고해상도 이미지도 축소 없이 처리</div>
-                    <div class="feature-tag">🚫 워터마크 없음</div>
-                </div>
+                <!-- 우측 배너광고 영역 (추후 광고 추가를 위해 주석 처리) -->
+                <!-- <div class="ad-side-banner">Ad Space<br>(우측 본문 옆)</div> -->
             </div>
         </div>
     </div>
@@ -138,87 +195,226 @@
     <script type="module">
         import imglyRemoveBackground from "https://esm.sh/@imgly/background-removal@1.4.5";
 
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
+        // ---- UI Tabs ----
+        const tabSingleMode = document.getElementById('tabSingleMode');
+        const tabBatchMode = document.getElementById('tabBatchMode');
+        const modeSingleBox = document.getElementById('modeSingleBox');
+        const modeBatchBox = document.getElementById('modeBatchBox');
+        const featuresBottom = document.getElementById('featuresBottom');
+
+        tabSingleMode.addEventListener('click', () => {
+            tabSingleMode.classList.add('active');
+            tabBatchMode.classList.remove('active');
+            modeSingleBox.style.display = 'block';
+            modeBatchBox.style.display = 'none';
+        });
+
+        tabBatchMode.addEventListener('click', () => {
+            tabBatchMode.classList.add('active');
+            tabSingleMode.classList.remove('active');
+            modeBatchBox.style.display = 'block';
+            modeSingleBox.style.display = 'none';
+        });
+
+        // 글로벌 드래그 차단
+        document.addEventListener('dragover', (e) => e.preventDefault(), false);
+        document.addEventListener('drop', (e) => e.preventDefault(), false);
+
+        // ---- SINGLE MODE LOGIC ----
+        const uploadAreaSingle = document.getElementById('uploadAreaSingle');
+        const fileInputSingle = document.getElementById('fileInputSingle');
         const resultArea = document.getElementById('resultArea');
         const resultImage = document.getElementById('resultImage');
         const originalImage = document.getElementById('originalImage');
         const downloadBtn = document.getElementById('downloadBtn');
-        const restartBtn = document.getElementById('restartBtn');
-        const loadingArea = document.getElementById('loadingArea');
-        const loadingText = document.getElementById('loadingText');
-        const featuresBottom = document.getElementById('featuresBottom');
+        const restartBtnSingle = document.getElementById('restartBtnSingle');
+        const loadingAreaSingle = document.getElementById('loadingAreaSingle');
+        const loadingTextSingle = document.getElementById('loadingTextSingle');
+        const config = { publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.4.5/dist/" };
 
-        // 전체 화면에서 실수로 드래그 앤 드롭했을 때 브라우저가 사진을 열어버리는 현상 완벽 방지
-        document.addEventListener('dragover', (e) => e.preventDefault(), false);
-        document.addEventListener('drop', (e) => e.preventDefault(), false);
-
-        uploadArea.addEventListener('click', () => fileInput.click());
-        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
-        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-        uploadArea.addEventListener('drop', (e) => {
+        uploadAreaSingle.addEventListener('click', () => fileInputSingle.click());
+        uploadAreaSingle.addEventListener('dragover', (e) => { e.preventDefault(); uploadAreaSingle.classList.add('dragover'); });
+        uploadAreaSingle.addEventListener('dragleave', () => uploadAreaSingle.classList.remove('dragover'));
+        uploadAreaSingle.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            if(e.dataTransfer.files.length > 0) processImage(e.dataTransfer.files[0]);
+            uploadAreaSingle.classList.remove('dragover');
+            if(e.dataTransfer.files.length > 0) processSingle(e.dataTransfer.files[0]);
+        });
+        fileInputSingle.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) processSingle(e.target.files[0]);
         });
 
-        fileInput.addEventListener('change', (e) => {
-            if(e.target.files.length > 0) processImage(e.target.files[0]);
-        });
-
-        restartBtn.addEventListener('click', () => {
+        restartBtnSingle.addEventListener('click', () => {
             resultArea.style.display = 'none';
-            uploadArea.style.display = 'block';
-            featuresBottom.style.display = 'flex';
-            fileInput.value = '';
-            loadingText.innerText = "브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️";
+            uploadAreaSingle.style.display = 'block';
+            fileInputSingle.value = '';
         });
 
-        async function processImage(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('이미지 파일만 업로드 가능합니다!');
-                return;
-            }
-
-            uploadArea.style.display = 'none';
-            featuresBottom.style.display = 'none';
-            loadingArea.style.display = 'block';
-            resultArea.style.display = 'none';
-            loadingText.innerText = "로컬 AI 모델 준비 및 분석 중... 🏃‍♂️";
+        async function processSingle(file) {
+            if (!file.type.startsWith('image/')) return alert('이미지 파일만 가능합니다!');
             
-            // 프리뷰에 원본 이미지 표시
+            uploadAreaSingle.style.display = 'none';
+            loadingAreaSingle.style.display = 'block';
+            resultArea.style.display = 'none';
+            loadingTextSingle.innerText = "로컬 AI 모델 준비 및 눈누난나 분석 중... 🏃‍♂️";
             originalImage.src = URL.createObjectURL(file);
 
             try {
-                // AI 모델 에셋 주소 명시
-                let config = {
-                    publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.4.5/dist/"
-                };
-                
                 const blob = await imglyRemoveBackground(file, config);
                 const url = URL.createObjectURL(blob);
                 
-                // 원본 파일명을 분석하여 [원본이름]-snaptask.png 형태로 다운로드 이름 지정
-                const originalName = file.name || 'image';
-                const lastDotIndex = originalName.lastIndexOf('.');
-                const nameWithoutExt = lastDotIndex !== -1 ? originalName.substring(0, lastDotIndex) : originalName;
-                downloadBtn.download = `${nameWithoutExt}-snaptask.png`;
+                const dotIdx = file.name.lastIndexOf('.');
+                const rootName = dotIdx !== -1 ? file.name.substring(0, dotIdx) : file.name;
+                downloadBtn.download = `${rootName}-snaptask.png`;
                 
                 resultImage.src = url;
                 downloadBtn.href = url;
                 
-                loadingArea.style.display = 'none';
+                loadingAreaSingle.style.display = 'none';
                 resultArea.style.display = 'block';
-            } catch (error) {
-                console.error("배경 제거 실패:", error);
-                alert("오류 발생: " + error.message + "\n\n네트워크 연결을 확인하거나 F12 개발자 도구의 터미널(Console)을 확인해 주세요.");
-                uploadArea.style.display = 'block';
-                featuresBottom.style.display = 'flex';
-                loadingArea.style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert("오류 발생: " + err.message);
+                uploadAreaSingle.style.display = 'block';
+                loadingAreaSingle.style.display = 'none';
             }
         }
+
+        // ---- BATCH MODE LOGIC ----
+        const uploadAreaBatch = document.getElementById('uploadAreaBatch');
+        const fileInputBatch = document.getElementById('fileInputBatch');
+        const batchProcessArea = document.getElementById('batchProcessArea');
+        const batchListContainer = document.getElementById('batchListContainer');
+        const batchStatusTitle = document.getElementById('batchStatusTitle');
+        const btnZipDownload = document.getElementById('btnZipDownload');
+        const restartBtnBatch = document.getElementById('restartBtnBatch');
+        
+        // 메모리 이슈를 막기 위해 전역적으로 저장할 Zip 인스턴스
+        let currentZip = null;
+
+        uploadAreaBatch.addEventListener('click', () => fileInputBatch.click());
+        uploadAreaBatch.addEventListener('dragover', (e) => { e.preventDefault(); uploadAreaBatch.classList.add('dragover'); });
+        uploadAreaBatch.addEventListener('dragleave', () => uploadAreaBatch.classList.remove('dragover'));
+        uploadAreaBatch.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadAreaBatch.classList.remove('dragover');
+            if(e.dataTransfer.files.length > 0) startBatchProcessing(e.dataTransfer.files);
+        });
+        fileInputBatch.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) startBatchProcessing(e.target.files);
+        });
+        
+        restartBtnBatch.addEventListener('click', () => {
+            batchProcessArea.style.display = 'none';
+            uploadAreaBatch.style.display = 'block';
+            btnZipDownload.style.display = 'none';
+            restartBtnBatch.style.display = 'none';
+            fileInputBatch.value = '';
+            batchListContainer.innerHTML = '';
+            currentZip = null;
+        });
+
+        async function startBatchProcessing(files) {
+            let validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if(validFiles.length === 0) return alert('이미지 파일만 선택해주세요!');
+            
+            if(validFiles.length > 10) {
+                alert(`안정적인 처리를 위해 최대 10장까지만 허용됩니다. (선택: ${validFiles.length}장)\n초과된 파일은 제외하고 10장만 처리합니다.`);
+                validFiles = validFiles.slice(0, 10);
+            }
+
+            uploadAreaBatch.style.display = 'none';
+            batchProcessArea.style.display = 'block';
+            btnZipDownload.style.display = 'none';
+            restartBtnBatch.style.display = 'none';
+            batchListContainer.innerHTML = '';
+            
+            currentZip = new JSZip();
+            let successCount = 0;
+
+            // UI 렌더링 먼저
+            validFiles.forEach((file, idx) => {
+                const itemHtml = `
+                    <div class="batch-item" id="batchItem-${idx}">
+                        <div class="batch-thumb-wrapper"><img src="${URL.createObjectURL(file)}" class="batch-thumb"></div>
+                        <div class="batch-info" style="align-self: flex-start; margin-top: 0.5rem;">
+                            <span class="batch-name" style="font-size: 1rem;">${file.name}</span>
+                            <span class="batch-status" id="batchStatus-${idx}" style="margin-top: 0.5rem; font-size: 0.9rem;">⏳ 대기 중...</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
+                            <div class="batch-thumb-wrapper checkerboard"><img src="" class="batch-thumb" id="batchResult-${idx}" style="display:none;"></div>
+                            <a id="batchDownloadBtn-${idx}" class="btn-zip" style="display:none; padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--accent-color); color: white; border-radius: 0.4rem; text-decoration: none; font-weight: 700;">📥 개별 저장</a>
+                        </div>
+                    </div>
+                `;
+                batchListContainer.insertAdjacentHTML('beforeend', itemHtml);
+            });
+
+            // 순차적(메모리 펑크 방지) 백그라운드 제거 진행
+            for(let i=0; i<validFiles.length; i++) {
+                const file = validFiles[i];
+                batchStatusTitle.innerText = `🔄 처리 중... (${i+1}/${validFiles.length})`;
+                document.getElementById(`batchStatus-${i}`).innerText = "🏃‍♂️ AI 분석 중...";
+                document.getElementById(`batchStatus-${i}`).style.color = "var(--accent-color)";
+
+                try {
+                    const blob = await imglyRemoveBackground(file, config);
+                    const url = URL.createObjectURL(blob);
+                    
+                    // 성공 처리
+                    document.getElementById(`batchResult-${i}`).src = url;
+                    document.getElementById(`batchResult-${i}`).style.display = "block";
+                    document.getElementById(`batchStatus-${i}`).innerText = "✅ 완료됨";
+                    document.getElementById(`batchStatus-${i}`).classList.add("status-done");
+                    
+                    const dotIdx = file.name.lastIndexOf('.');
+                    const rootName = dotIdx !== -1 ? file.name.substring(0, dotIdx) : file.name;
+                    
+                    // 개별 다운로드 버튼 활성화
+                    const individualBtn = document.getElementById(`batchDownloadBtn-${i}`);
+                    individualBtn.href = url;
+                    individualBtn.download = `${rootName}-snaptask.png`;
+                    individualBtn.style.display = "inline-block";
+                    
+                    // Zip에 추가
+                    currentZip.file(`${rootName}-snaptask.png`, blob);
+                    successCount++;
+                    
+                } catch (err) {
+                    console.error("파일 처리 실패:", file.name, err);
+                    document.getElementById(`batchStatus-${i}`).innerText = "❌ 처리 실패";
+                    document.getElementById(`batchStatus-${i}`).classList.add("status-error");
+                }
+            }
+            
+            // 일괄 처리 완료 후
+            batchStatusTitle.innerText = `✨ 작업 완료! (총 ${successCount}장 성공)`;
+            if(successCount > 0) {
+                btnZipDownload.style.display = "inline-block";
+            }
+            restartBtnBatch.style.display = "inline-block";
+        }
+        
+        // ZIP 다운로드 이벤트
+        btnZipDownload.addEventListener('click', async () => {
+            if(!currentZip) return;
+            const originalText = btnZipDownload.innerText;
+            btnZipDownload.innerText = "📦 압축 파일 생성 중...";
+            try {
+                const content = await currentZip.generateAsync({type: "blob"});
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = "snaptask-batch-results.zip";
+                link.click();
+            } catch (err) {
+                alert("압축 생성 중 문제가 발생했습니다.");
+            } finally {
+                btnZipDownload.innerText = originalText;
+            }
+        });
     </script>
-    
+
+    <!-- 사이드바 햄버거 토글 JS -->
     <script>
         document.getElementById('menuToggle').addEventListener('click', function() {
             if (window.innerWidth <= 768) {

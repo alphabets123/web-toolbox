@@ -21,7 +21,8 @@
     </style>
 </head>
 <body>
-    <div class="sidebar">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
         <div style="margin-bottom: 3rem;">
             <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
             <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-top: 0.2rem; letter-spacing: -0.5px;">딸깍 작업</div>
@@ -36,6 +37,7 @@
     </div>
     
     <div class="main-content">
+        <button class="menu-toggle" id="menuToggle">☰ 메뉴</button>
         <div class="bg-blob"></div>
         <div class="bg-blob-2"></div>
         
@@ -65,5 +67,16 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('sidebarOverlay').classList.add('open');
+        });
+        document.getElementById('sidebarOverlay').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+        });
+    </script>
 </body>
 </html>

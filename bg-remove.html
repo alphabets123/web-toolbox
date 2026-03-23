@@ -88,10 +88,9 @@
         </div>
     </div>
 
-<!-- Add imgly script properly above standard script -->
-    <script src="https://unpkg.com/@imgly/background-removal@1.4.5/dist/imgly-background-removal.js"></script>
+    <script type="module">
+        import imglyRemoveBackground from "https://esm.sh/@imgly/background-removal@1.4.5";
 
-    <script>
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const resultArea = document.getElementById('resultArea');
@@ -140,7 +139,6 @@
             loadingText.innerText = "로컬 AI 모델 준비 및 분석 중... 🏃‍♂️";
 
             try {
-                // imgly 웹어셈블리 / ONNX 기반 AI 모델 실행 (글로벌 객체 사용)
                 let config = {
                     publicPath: "https://unpkg.com/@imgly/background-removal@1.4.5/dist/"
                 };

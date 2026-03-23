@@ -4,163 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snap-Task - 빠르고 단순한 업무 도구</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <style>
-        :root {
-            --bg-color: #050505;
-            --accent-color: #6366f1;
-            --secondary-color: #ec4899;
-            --text-color: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Animated Background */
-        .bg-blob {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, var(--accent-color) 0%, transparent 70%);
-            filter: blur(80px);
-            opacity: 0.2;
-            z-index: -1;
-            animation: move 20s infinite alternate;
-        }
-
-        .bg-blob-2 {
-            position: absolute;
-            bottom: -100px;
-            right: -100px;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, var(--secondary-color) 0%, transparent 70%);
-            filter: blur(80px);
-            opacity: 0.15;
-            z-index: -1;
-            animation: move 15s infinite alternate-reverse;
-        }
-
-        @keyframes move {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(100px, 100px) scale(1.1); }
-        }
-
-        .container {
-            text-align: center;
-            padding: 3rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            max-width: 600px;
-            width: 90%;
-            animation: fadeIn 1s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, var(--accent-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
-        }
-
-        p {
-            font-size: 1.25rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 2.5rem;
-            font-weight: 300;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 9999px;
-            color: var(--accent-color);
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 1rem 2rem;
-            background: var(--accent-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.5);
-            background: #4f46e5;
-        }
-
-        .footer {
-            margin-top: 3rem;
-            font-size: 0.875rem;
-            color: rgba(255, 255, 255, 0.4);
-        }
+        .badge { display: inline-block; padding: 0.5rem 1rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 9999px; color: var(--accent-color); font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem; text-transform: uppercase; }
+        h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1rem; }
+        p.desc { font-size: 1.1rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 2.5rem; font-weight: 300; }
+        
+        .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 0; text-align: left; }
+        .tool-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 1rem; padding: 1.5rem; text-decoration: none; color: var(--text-color); transition: all 0.3s ease; display: flex; flex-direction: column; gap: 0.5rem; }
+        .tool-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.08); border-color: var(--accent-color); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+        .tool-card.disabled { opacity: 0.3; pointer-events: none; }
+        .tool-card .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .tool-card h3 { font-size: 1.15rem; font-weight: 600; }
+        .tool-card p { font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); line-height: 1.4; margin: 0; }
     </style>
 </head>
 <body>
-    <div class="bg-blob"></div>
-    <div class="bg-blob-2"></div>
-
-    <div class="container">
-        <div class="badge">Cloudflare + GitHub</div>
-        <h1>Snap-Task</h1>
-        <p>설치 없이, 서버 업로드 없이 브라우저에서 1분 만에 끝내는 필수 업무 도구 모음.</p>
+    <div class="sidebar">
+        <a href="index.html" class="brand">Snap-Task</a>
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-item active">🏠 대시보드</a>
+            <a href="bg-remove.html" class="nav-item">✂️ 배경 제거</a>
+            <a href="#" class="nav-item disabled">🎬 동영상 컷편집</a>
+            <a href="#" class="nav-item disabled">⬇️ 유튜브 다운</a>
+        </nav>
+        <div class="sidebar-footer">&copy; 2026 Snap-Task.<br>No Server Uploads.</div>
+    </div>
+    
+    <div class="main-content">
+        <div class="bg-blob"></div>
+        <div class="bg-blob-2"></div>
         
-        <a href="#" class="btn" id="mainButton">준비 중입니다</a>
-
-        <div class="footer">
-            &copy; 2026 Snap-Task. All rights reserved. (No Data Uploaded)
+        <div class="container">
+            <div class="badge">Cloudflare + Web ML</div>
+            <h1>Snap-Task Dashboard</h1>
+            <p class="desc">설치 없이, 서버 전송 없이 내 PC/브라우저 자체 AI로 1분 만에 끝내는 필수 도구.</p>
+            
+            <div class="tool-grid">
+                <a href="bg-remove.html" class="tool-card">
+                    <div class="icon">✂️</div>
+                    <h3>배경 제거 (누끼 따기)</h3>
+                    <p>이미지 크기 무제한, 무손실 고화질 다운로드. 완벽한 프라이버시.</p>
+                </a>
+                
+                <a href="#" class="tool-card disabled">
+                    <div class="icon">🎬</div>
+                    <h3>동영상 구간 자르기 (준비중)</h3>
+                    <p>내장된 WebAssembly 엔진을 통해 브라우저에서 직접 빠른 컷편집.</p>
+                </a>
+                
+                <a href="#" class="tool-card disabled">
+                    <div class="icon">⬇️</div>
+                    <h3>유튜브 영상 다운 (준비중)</h3>
+                    <p>복잡한 설치나 광고가 범벅된 사이트 방문 없이 안전한 원클릭 다운로드.</p>
+                </a>
+            </div>
         </div>
     </div>
-
-    <Script>
-        document.getElementById('mainButton').addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('곧 멋진 도구들이 공개됩니다!');
-        });
-    </script>
 </body>
 </html>

@@ -105,9 +105,12 @@
                     <p class="subtitle">AI 기반 초고속 누끼 따기 (100% 프라이빗)</p>
 
                     <!-- Tabs -->
-                    <div class="tabs-container" style="margin: 0 auto 2rem auto;">
-                        <button class="tab-btn active" id="tabSingleMode">단일 이미지 (1장)</button>
-                        <button class="tab-btn" id="tabBatchMode">다중 일괄 처리 (최대 10장)</button>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                        <div class="tabs-container" style="margin: 0;">
+                            <button class="tab-btn active" id="tabSingleMode">단일 이미지 (1장)</button>
+                            <button class="tab-btn" id="tabBatchMode">다중 일괄 처리 (최대 10장)</button>
+                        </div>
+                        <button id="globalRestartBtn" class="btn-restart" style="display: none; height: fit-content; padding: 0.6rem 1rem; font-size: 0.9rem; margin: 0;">처음부터 다시 🔄</button>
                     </div>
 
                     <!-- ================= SINGLE MODE ================= -->
@@ -149,7 +152,6 @@
 
                             <div>
                                 <a id="downloadBtn" class="btn-download" download="snaptask_nobg.png">📥 투명 배경으로 저장</a>
-                                <button id="restartBtnSingle" class="btn-restart">다른 사진 🔄</button>
                             </div>
                         </div>
                     </div>
@@ -170,7 +172,6 @@
                             <div class="batch-header">
                                 <h3 id="batchStatusTitle">🕒 대기 중...</h3>
                                 <button id="btnZipDownload" class="btn-zip">📦 압축파일(ZIP) 다운로드</button>
-                                <button id="restartBtnBatch" class="btn-restart" style="display: none; padding: 0.6rem 1rem; font-size: 0.9rem;">처음부터 다시 🔄</button>
                             </div>
                             
                             <div class="batch-list" id="batchListContainer">
@@ -202,6 +203,9 @@
         const modeBatchBox = document.getElementById('modeBatchBox');
         const featuresBottom = document.getElementById('featuresBottom');
 
+        const globalRestartBtn = document.getElementById('globalRestartBtn');
+        globalRestartBtn.addEventListener('click', () => window.location.reload());
+
         tabSingleMode.addEventListener('click', () => {
             tabSingleMode.classList.add('active');
             tabBatchMode.classList.remove('active');
@@ -227,7 +231,6 @@
         const resultImage = document.getElementById('resultImage');
         const originalImage = document.getElementById('originalImage');
         const downloadBtn = document.getElementById('downloadBtn');
-        const restartBtnSingle = document.getElementById('restartBtnSingle');
         const loadingAreaSingle = document.getElementById('loadingAreaSingle');
         const loadingTextSingle = document.getElementById('loadingTextSingle');
         const config = { publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.4.5/dist/" };
@@ -244,19 +247,13 @@
             if(e.target.files.length > 0) processSingle(e.target.files[0]);
         });
 
-        restartBtnSingle.addEventListener('click', () => {
-            resultArea.style.display = 'none';
-            uploadAreaSingle.style.display = 'block';
-            fileInputSingle.value = '';
-        });
-
         async function processSingle(file) {
             if (!file.type.startsWith('image/')) return alert('이미지 파일만 가능합니다!');
             
             uploadAreaSingle.style.display = 'none';
             loadingAreaSingle.style.display = 'block';
             resultArea.style.display = 'none';
-            loadingTextSingle.innerText = "로컬 AI 모델 준비 및 눈누난나 분석 중... 🏃‍♂️";
+            loadingTextSingle.innerText = "로컬 AI 모델 준비 및 이미지 정밀 분석 중... 🏃‍♂️";
             originalImage.src = URL.createObjectURL(file);
 
             try {
@@ -272,6 +269,7 @@
                 
                 loadingAreaSingle.style.display = 'none';
                 resultArea.style.display = 'block';
+                globalRestartBtn.style.display = 'block';
             } catch (err) {
                 console.error(err);
                 alert("오류 발생: " + err.message);
@@ -287,7 +285,6 @@
         const batchListContainer = document.getElementById('batchListContainer');
         const batchStatusTitle = document.getElementById('batchStatusTitle');
         const btnZipDownload = document.getElementById('btnZipDownload');
-        const restartBtnBatch = document.getElementById('restartBtnBatch');
         
         // 메모리 이슈를 막기 위해 전역적으로 저장할 Zip 인스턴스
         let currentZip = null;
@@ -303,16 +300,6 @@
         fileInputBatch.addEventListener('change', (e) => {
             if(e.target.files.length > 0) startBatchProcessing(e.target.files);
         });
-        
-        restartBtnBatch.addEventListener('click', () => {
-            batchProcessArea.style.display = 'none';
-            uploadAreaBatch.style.display = 'block';
-            btnZipDownload.style.display = 'none';
-            restartBtnBatch.style.display = 'none';
-            fileInputBatch.value = '';
-            batchListContainer.innerHTML = '';
-            currentZip = null;
-        });
 
         async function startBatchProcessing(files) {
             let validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
@@ -326,7 +313,7 @@
             uploadAreaBatch.style.display = 'none';
             batchProcessArea.style.display = 'block';
             btnZipDownload.style.display = 'none';
-            restartBtnBatch.style.display = 'none';
+            globalRestartBtn.style.display = 'none';
             batchListContainer.innerHTML = '';
             
             currentZip = new JSZip();
@@ -335,15 +322,17 @@
             // UI 렌더링 먼저
             validFiles.forEach((file, idx) => {
                 const itemHtml = `
-                    <div class="batch-item" id="batchItem-${idx}">
-                        <div class="batch-thumb-wrapper"><img src="${URL.createObjectURL(file)}" class="batch-thumb"></div>
-                        <div class="batch-info" style="align-self: flex-start; margin-top: 0.5rem;">
-                            <span class="batch-name" style="font-size: 1rem;">${file.name}</span>
-                            <span class="batch-status" id="batchStatus-${idx}" style="margin-top: 0.5rem; font-size: 0.9rem;">⏳ 대기 중...</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem;">
+                    <div class="batch-item" id="batchItem-${idx}" style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; gap: 1rem;">
+                            <div class="batch-thumb-wrapper"><img src="${URL.createObjectURL(file)}" class="batch-thumb"></div>
                             <div class="batch-thumb-wrapper checkerboard"><img src="" class="batch-thumb" id="batchResult-${idx}" style="display:none;"></div>
-                            <a id="batchDownloadBtn-${idx}" class="btn-zip" style="display:none; padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--accent-color); color: white; border-radius: 0.4rem; text-decoration: none; font-weight: 700;">📥 개별 저장</a>
+                        </div>
+                        <div class="batch-info" style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 0.5rem; align-self: center;">
+                            <span class="batch-name" style="font-size: 1.05rem; font-weight: 800; color: var(--text-color);">${file.name}</span>
+                            <span class="batch-status" id="batchStatus-${idx}" style="font-size: 0.95rem;">⏳ 대기 중...</span>
+                            <div style="margin-top: 0.2rem;">
+                                <a id="batchDownloadBtn-${idx}" class="btn-zip" style="display:none; padding: 0.6rem 1.2rem; font-size: 0.9rem; background: var(--accent-color); color: white; border-radius: 0.5rem; text-decoration: none; font-weight: 700;">📥 개별 저장</a>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -392,7 +381,7 @@
             if(successCount > 0) {
                 btnZipDownload.style.display = "inline-block";
             }
-            restartBtnBatch.style.display = "inline-block";
+            globalRestartBtn.style.display = "block";
         }
         
         // ZIP 다운로드 이벤트

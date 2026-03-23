@@ -88,10 +88,10 @@
         </div>
     </div>
 
-    <script type="module">
-        // ES Module 방식으로 라이브러리 정확히 호출
-        import imglyRemoveBackground from "https://unpkg.com/@imgly/background-removal@1.4.5/dist/imgly-background-removal.js";
+<!-- Add imgly script properly above standard script -->
+    <script src="https://unpkg.com/@imgly/background-removal@1.4.5/dist/imgly-background-removal.js"></script>
 
+    <script>
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const resultArea = document.getElementById('resultArea');
@@ -102,9 +102,9 @@
         const loadingText = document.getElementById('loadingText');
         const featuresBottom = document.getElementById('featuresBottom');
 
-        // 전체 화면에서 실수로 드래그 앤 드롭했을 때 브라우저가 사진을 열어버리는 현상 방지
-        window.addEventListener('dragover', (e) => e.preventDefault(), false);
-        window.addEventListener('drop', (e) => e.preventDefault(), false);
+        // 전체 화면에서 실수로 드래그 앤 드롭했을 때 브라우저가 사진을 열어버리는 현상 완벽 방지
+        document.addEventListener('dragover', (e) => e.preventDefault(), false);
+        document.addEventListener('drop', (e) => e.preventDefault(), false);
 
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
@@ -128,7 +128,6 @@
         });
 
         async function processImage(file) {
-            // Validate file type
             if (!file.type.startsWith('image/')) {
                 alert('이미지 파일만 업로드 가능합니다!');
                 return;
@@ -141,13 +140,12 @@
             loadingText.innerText = "로컬 AI 모델 준비 및 분석 중... 🏃‍♂️";
 
             try {
-                const config = {
+                // imgly 웹어셈블리 / ONNX 기반 AI 모델 실행 (글로벌 객체 사용)
+                let config = {
                     publicPath: "https://unpkg.com/@imgly/background-removal@1.4.5/dist/"
                 };
                 
-                // imgly 웹어셈블리 / ONNX 기반 AI 모델 실행
                 const blob = await imglyRemoveBackground(file, config);
-                
                 const url = URL.createObjectURL(blob);
                 
                 resultImage.src = url;
@@ -157,7 +155,7 @@
                 resultArea.style.display = 'block';
             } catch (error) {
                 console.error("배경 제거 실패:", error);
-                alert("배경 제거 프로세스 중 오류가 발생했습니다: " + error.message);
+                alert("오류 발생: " + error.message + "\n\n네트워크 연결을 확인하거나 F12 개발자 도구의 터미널(Console)을 확인해 주세요.");
                 uploadArea.style.display = 'block';
                 featuresBottom.style.display = 'flex';
                 loadingArea.style.display = 'none';

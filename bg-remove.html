@@ -7,9 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
-    <!-- imgly background removal engine (Runs 100% locally using WebAssembly & ONNX) -->
-    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5"></script>
-    
     <style>
         h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
         .subtitle { color: var(--accent-color); font-weight: 600; margin-bottom: 2rem; }
@@ -69,7 +66,7 @@
             
             <div class="loading" id="loadingArea">
                 <div class="spinner"></div>
-                <div class="loading-text">브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️</div>
+                <div class="loading-text" id="loadingText">브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️</div>
                 <div class="loading-sub">서버 없이 내 PC/스마트폰 성능만으로 이미지를 분석하고 있습니다!<br>절대 파일이 외부로 전송되지 않으니 안심하세요.</div>
             </div>
 
@@ -91,7 +88,10 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // ES Module 방식으로 라이브러리 정확히 호출
+        import imglyRemoveBackground from "https://unpkg.com/@imgly/background-removal@1.4.5/dist/imgly-background-removal.js";
+
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const resultArea = document.getElementById('resultArea');
@@ -99,6 +99,7 @@
         const downloadBtn = document.getElementById('downloadBtn');
         const restartBtn = document.getElementById('restartBtn');
         const loadingArea = document.getElementById('loadingArea');
+        const loadingText = document.getElementById('loadingText');
         const featuresBottom = document.getElementById('featuresBottom');
 
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -119,6 +120,7 @@
             uploadArea.style.display = 'block';
             featuresBottom.style.display = 'flex';
             fileInput.value = '';
+            loadingText.innerText = "브라우저의 AI 엔진이 열일 중입니다... 🏃‍♂️";
         });
 
         async function processImage(file) {
@@ -132,15 +134,15 @@
             featuresBottom.style.display = 'none';
             loadingArea.style.display = 'block';
             resultArea.style.display = 'none';
+            loadingText.innerText = "로컬 AI 모델 준비 및 분석 중... 🏃‍♂️";
 
             try {
+                const config = {
+                    publicPath: "https://unpkg.com/@imgly/background-removal@1.4.5/dist/"
+                };
+                
                 // imgly 웹어셈블리 / ONNX 기반 AI 모델 실행
-                // 서버 업로드 없이 브라우저 내부에서 블롭(Blob) 객체를 직접 처리
-                const blob = await imglyRemoveBackground(file, {
-                    progress: (key, current, total) => {
-                        console.log(`Downloading AI Model (${key}): ${current} of ${total}`);
-                    }
-                });
+                const blob = await imglyRemoveBackground(file, config);
                 
                 const url = URL.createObjectURL(blob);
                 
@@ -151,7 +153,7 @@
                 resultArea.style.display = 'block';
             } catch (error) {
                 console.error("배경 제거 실패:", error);
-                alert("오류 발생: " + error.message + "\n\n💡주의: 탐색기에서 파일(file://)을 더블클릭해서 열면, 브라우저 보안 정책상 인공지능 엔진(Web Worker/WASM)이 차단되어 작동하지 않습니다. \n반드시 웹 주소(http://) 환경이나 클라우드플레어 메인 주소에서 테스트해 주세요!");
+                alert("배경 제거 프로세스 중 오류가 발생했습니다: " + error.message);
                 uploadArea.style.display = 'block';
                 featuresBottom.style.display = 'flex';
                 loadingArea.style.display = 'none';

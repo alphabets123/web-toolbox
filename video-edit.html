@@ -14,6 +14,9 @@
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         .main-content-inner {
             position: relative;
@@ -446,7 +449,6 @@
                             </div>
                             <p style="font-size: 0.75rem; color: #ef4444; font-weight: 700; margin-top: 0.1rem;">※ 현재 포맷은 mp4, 용량은 1GB까지 지원합니다.</p>
                         </div>
-                        <button id="btn-export" class="btn-action vibrant" disabled style="padding: 0.6rem 1.8rem; font-size: 1rem; flex-shrink: 0;">저장 및 내보내기 📥</button>
                     </div>
                     <div id="toast-container" class="toast-container"></div>
 
@@ -489,22 +491,22 @@
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <b style="font-size: 0.75rem; color: var(--text-muted);">시작</b>
                                             <div class="time-group">
-                                                <input type="number" id="start-h" placeholder="00" min="0" max="99">
+                                                <input type="text" id="start-h" placeholder="00" maxlength="2" inputmode="numeric">
                                                 <span>:</span>
-                                                <input type="number" id="start-m" placeholder="00" min="0" max="59">
+                                                <input type="text" id="start-m" placeholder="00" maxlength="2" inputmode="numeric">
                                                 <span>:</span>
-                                                <input type="number" id="start-s" placeholder="00" min="0" max="59">
+                                                <input type="text" id="start-s" placeholder="00" maxlength="2" inputmode="numeric">
                                             </div>
                                             <button id="btn-set-start" class="btn-action" style="padding: 0.3rem 0.6rem; font-size: 0.7rem;">현재시점 📍</button>
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <b style="font-size: 0.75rem; color: var(--text-muted);">종료</b>
                                             <div class="time-group">
-                                                <input type="number" id="end-h" placeholder="00" min="0" max="99">
+                                                <input type="text" id="end-h" placeholder="00" maxlength="2" inputmode="numeric">
                                                 <span>:</span>
-                                                <input type="number" id="end-m" placeholder="00" min="0" max="59">
+                                                <input type="text" id="end-m" placeholder="00" maxlength="2" inputmode="numeric">
                                                 <span>:</span>
-                                                <input type="number" id="end-s" placeholder="00" min="0" max="59">
+                                                <input type="text" id="end-s" placeholder="00" maxlength="2" inputmode="numeric">
                                             </div>
                                             <button id="btn-set-end" class="btn-action" style="padding: 0.3rem 0.6rem; font-size: 0.7rem;">현재시점 📍</button>
                                         </div>
@@ -513,20 +515,51 @@
                                                 <div><span id="clip-duration">0</span>s</div>
                                                 <div style="font-size: 0.7rem; color: var(--accent-color); opacity: 0.8;">구간: <span id="segment-count">0</span> / 23</div>
                                             </div>
-                                            <button id="btn-add-segment" class="btn-action primary" style="background: #10b981; padding: 0.4rem 0.8rem;">구간 추가 ➕</button>
+                                            <div style="display: flex; gap: 4px;">
+                                                <button id="btn-add-segment" class="btn-action primary" style="background: #10b981; padding: 0.5rem 1rem; font-weight: 800;">구간 추가 ➕</button>
+                                                <button id="btn-clear-all" class="btn-action" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: #fee2e2; border-color: #fecaca; color: #991b1b; font-weight: 700;" title="모든 구간 삭제">구간 일괄 삭제 🗑️</button>
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <!-- 수정기록 관리 섹터 -->
-                                    <div style="display: flex; gap: 0.4rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0; align-items: stretch;">
-                                        <div id="drop-zone-records" class="drop-zone-records">
-                                            <i class="fas fa-file-import"></i>
-                                            <span>기록(.txt) 불러오기 (드래그)</span>
+                                    <!-- 수정기록 및 내보내기 관리 섹터 -->
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap;">
+                                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                                <label class="premium-switch">
+                                                    <input type="checkbox" id="check-separate">
+                                                    <div class="switch-track">
+                                                        <div class="switch-thumb"></div>
+                                                    </div>
+                                                    <span class="switch-label">구간별 각각 저장</span>
+                                                </label>
+                                                
+                                                <div style="display: flex; align-items: center; gap: 4px;">
+                                                    <div class="mode-toggle" id="mode-selector">
+                                                        <div class="mode-option" data-mode="fast">고속모드</div>
+                                                        <div class="mode-option active" data-mode="precision">정밀모드</div>
+                                                    </div>
+                                                    <button id="btn-help-mode" class="btn-toggle-help" title="편집 모드 안내">
+                                                        <i class="fas fa-question"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <button id="btn-export" class="btn-action vibrant" disabled style="padding: 0.5rem 1.2rem; font-size: 0.95rem; flex-shrink: 0;">동영상 저장 및 내보내기 📥</button>
                                         </div>
-                                        <button id="btn-save-records" class="btn-action" style="padding: 0 0.8rem; font-size: 0.75rem; background: #ecfdf5; border-color: #a7f3d0; color: #065f46; white-space: nowrap;">
-                                            <i class="fas fa-save" style="margin-right: 4px;"></i> 수정기록저장하기
-                                        </button>
-                                        <input type="file" id="records-upload" accept=".txt" style="display: none;">
+                                        
+                                        <div style="display: flex; gap: 0.4rem; align-items: stretch;">
+                                            <div id="drop-zone-records" class="drop-zone-records">
+                                                <i class="fas fa-file-import"></i>
+                                                <span>기록(.txt) 불러오기 (드래그)</span>
+                                            </div>
+                                            <button id="btn-save-records" class="btn-action" style="padding: 0 0.8rem; font-size: 0.75rem; background: #ecfdf5; border-color: #a7f3d0; color: #065f46; white-space: nowrap;">
+                                                <i class="fas fa-save" style="margin-right: 4px;"></i> 구간기록값 저장하기
+                                            </button>
+                                            <button id="btn-help-records" class="btn-action" style="padding: 0; width: 24px; height: 24px; border-radius: 50%; background: #f1f5f9; color: #64748b; font-size: 0.7rem; flex-shrink: 0;" title="도움말">
+                                                <i class="fas fa-question"></i>
+                                            </button>
+                                            <input type="file" id="records-upload" accept=".txt" style="display: none;">
+                                        </div>
                                     </div>
                                 </div>
                             </div>

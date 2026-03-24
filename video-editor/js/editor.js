@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSetStart = document.getElementById('btn-set-start');
     const btnSetEnd = document.getElementById('btn-set-end');
     const btnAddSegment = document.getElementById('btn-add-segment');
+    const btnClearAll = document.getElementById('btn-clear-all');
     const timelineList = document.getElementById('timeline-list');
     const clipDurationText = document.getElementById('clip-duration');
     const btnExport = document.getElementById('btn-export');
@@ -42,10 +43,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDownload = document.getElementById('btn-download-app');
     const timeFeedback = document.getElementById('time-feedback');
     const loadingOverlay = document.getElementById('loading-overlay');
+    const btnHelpRecords = document.getElementById('btn-help-records');
 
     const btnSaveRecords = document.getElementById('btn-save-records');
     const recordsUpload = document.getElementById('records-upload');
     const dropZoneRecords = document.getElementById('drop-zone-records');
+    const checkSeparate = document.getElementById('check-separate');
+    const modeOptions = document.querySelectorAll('.mode-option');
+    const btnHelpMode = document.getElementById('btn-help-mode');
+    let currentMode = 'precision'; // Default mode
 
     const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024;
     const MAX_CLIPS = 23;
@@ -55,12 +61,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingSegmentId = null;
 
     // --- Toast & Shake ---
-    function showToast(msg) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = msg;
-        toastContainer.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+    function showToast(msg, icon = 'info') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: msg,
+            showConfirmButton: false,
+            timer: 2500,
+            timerProgressBar: true
+        });
     }
 
     function shakeInput(groupId) {
@@ -126,7 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
             "Tip: If 'NO' to isolated, check COOP/COEP headers in serve.js.",
             "Tip: If Error persists, ensure internet is on for Worker fallback."
         ].join('\n');
-        alert(info);
+        Swal.fire({
+            title: '시스템 진단 정보',
+            html: `<pre style="text-align:left; font-size:0.8rem;">${info}</pre>`,
+            icon: 'info',
+            confirmButtonText: '확인'
+        });
     });
 
     loadFFmpeg();
@@ -168,6 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
 
+    function formatDurationLong(sec) {
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = Math.floor(sec % 60);
+        const hPart = h > 0 ? `${h.toString().padStart(2, '0')}:` : '';
+        const timePart = `${hPart}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        return `${timePart} (${Math.round(sec)})`;
+    }
+
     function calculateClipDuration() {
         const start = (parseInt(startInputs.hh.value) || 0) * 3600 + (parseInt(startInputs.mm.value) || 0) * 60 + (parseInt(startInputs.ss.value) || 0);
         const end = (parseInt(endInputs.hh.value) || 0) * 3600 + (parseInt(endInputs.mm.value) || 0) * 60 + (parseInt(endInputs.ss.value) || 0);
@@ -177,6 +201,43 @@ document.addEventListener('DOMContentLoaded', () => {
             shakeInput('end-s');
         }
     }
+
+    function nextInput(el) {
+        if (el.value.length >= 2) {
+            const allInputs = [
+                startInputs.hh, startInputs.mm, startInputs.ss,
+                endInputs.hh, endInputs.mm, endInputs.ss
+            ];
+            // Ensure values are numbers only and max 2 digits
+            el.value = el.value.replace(/\D/g, '').slice(0, 2);
+            
+            const idx = allInputs.indexOf(el);
+            const nextInputs = allInputs.slice(idx + 1).filter(inp => !inp.disabled && inp.style.display !== 'none');
+            if (nextInputs.length > 0) {
+                const next = nextInputs[0];
+                next.focus();
+                setTimeout(() => next.select(), 10);
+            }
+        }
+    }
+
+    [...Object.values(startInputs), ...Object.values(endInputs)].forEach(inp => {
+        inp.addEventListener('input', (e) => {
+            // Strict 2 digit limit and numeric only
+            const val = e.target.value;
+            if (val.length > 2) e.target.value = val.slice(0, 2);
+            
+            nextInput(inp);
+            calculateClipDuration();
+        });
+        inp.addEventListener('focus', () => {
+            inp.select(); // Select text on focus (click or tab)
+        });
+        inp.addEventListener('contextmenu', (e) => e.preventDefault()); // Prevent mobile long-press context
+        inp.addEventListener('blur', (e) => {
+            e.target.value = (parseInt(e.target.value) || 0).toString().padStart(2, '0');
+        });
+    });
 
     function updateExportState() {
         btnExport.disabled = timelineSegments.length === 0 || !importedSources.length;
@@ -188,6 +249,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFiles(files) {
         if (!files || files.length === 0) return;
         const file = files[0];
+        
+        // Safety check: Ignore text files (records) in video handler
+        if (file.name.toLowerCase().endsWith('.txt')) {
+            console.log("Record file ignored in video handler:", file.name);
+            return;
+        }
+
         console.log("File selected:", file.name, "size:", file.size, "type:", file.type);
         
         if (file.size > MAX_FILE_SIZE) { showDownloadPrompt(file.name); return; }
@@ -253,14 +321,23 @@ document.addEventListener('DOMContentLoaded', () => {
                    <div style="font-weight: 700; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem;">${src.name}</div>
                    <div style="font-size: 0.65rem; color: var(--text-muted);">총 길이: ${formatTime(src.duration)} | ${(src.file.size/(1024*1024)).toFixed(1)}MB</div>
                 </div>
-                <button id="btn-clear" class="btn-action danger" style="font-size: 0.65rem; padding: 0.1rem 0.3rem; white-space: nowrap; margin-left: 8px;">초기화 🧹</button>
+                <button id="btn-clear" class="btn-action danger" style="font-size: 0.825rem; padding: 0.3rem 0.6rem; white-space: nowrap; margin-left: 12px; font-weight: 800; border-radius: 8px;">비우기 🧹</button>
             </div>
         `;
         
-        document.getElementById('btn-clear').onclick = (e) => {
+        document.getElementById('btn-clear').onclick = async (e) => {
             e.stopPropagation();
             if (timelineSegments.length > 0) {
-                if (confirm("현재 작업 중인 내용이 모두 사라집니다. 초기화하시겠습니까?")) {
+                const result = await Swal.fire({
+                    title: '초기화 확인',
+                    text: '현재 작업 중인 내용이 모두 사라집니다. 초기화하시겠습니까?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '초기화',
+                    cancelButtonText: '취소',
+                    confirmButtonColor: '#ef4444'
+                });
+                if (result.isConfirmed) {
                     location.reload();
                 }
             } else {
@@ -329,54 +406,66 @@ document.addEventListener('DOMContentLoaded', () => {
             const eS = Math.floor(seg.endTime % 60).toString().padStart(2, '0');
 
             div.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.6rem; width: 100%;">
-                    <div style="font-weight: 800; color: var(--text-muted); min-width: 50px; font-size: 0.8rem;">클립 ${index + 1}</div>
-                    <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">시작</span>
-                        <div class="time-group">
-                            <input type="number" data-id="${seg.id}" data-type="start" data-unit="h" value="${sH}" ${isShort?'disabled':''}>:
-                            <input type="number" data-id="${seg.id}" data-type="start" data-unit="m" value="${sM}">:
-                            <input type="number" data-id="${seg.id}" data-type="start" data-unit="s" value="${sS}">
+                <div id="row-${seg.id}" style="display: flex; align-items: center; gap: 4px; width: 100%;">
+                    <div style="font-weight: 800; color: var(--text-muted); min-width: 40px; font-size: 0.75rem; flex-shrink: 0;">클립 ${index + 1}</div>
+                    <div class="clip-times" style="display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; overflow: hidden;">
+                        <span class="mobile-hide-label" style="font-size: 0.7rem; color: #94a3b8; font-weight: 600; flex-shrink: 0;">시작</span>
+                        <div class="time-group" style="flex-shrink: 0;">
+                            <input type="text" data-id="${seg.id}" data-type="start" data-unit="h" maxlength="2" inputmode="numeric" class="${seg.startTime >= 3600 ? '' : 'disabled'} ${seg.isDirty ? 'modified' : ''}" value="${sH}" ${isShort?'disabled':''}>:
+                            <input type="text" data-id="${seg.id}" data-type="start" data-unit="m" maxlength="2" inputmode="numeric" class="${seg.isDirty ? 'modified' : ''}" value="${sM}">:
+                            <input type="text" data-id="${seg.id}" data-type="start" data-unit="s" maxlength="2" inputmode="numeric" class="${seg.isDirty ? 'modified' : ''}" value="${sS}">
                         </div>
-                        <span style="color: #cbd5e1; margin: 0 0.2rem;">~</span>
-                        <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">종료</span>
-                        <div class="time-group">
-                            <input type="number" data-id="${seg.id}" data-type="end" data-unit="h" value="${eH}" ${isShort?'disabled':''}>:
-                            <input type="number" data-id="${seg.id}" data-type="end" data-unit="m" value="${eM}">:
-                            <input type="number" data-id="${seg.id}" data-type="end" data-unit="s" value="${eS}">
+                        <span style="color: #cbd5e1; flex-shrink: 0;">~</span>
+                        <span class="mobile-hide-label" style="font-size: 0.7rem; color: #94a3b8; font-weight: 600; flex-shrink: 0;">종료</span>
+                        <div class="time-group" style="flex-shrink: 0;">
+                            <input type="text" data-id="${seg.id}" data-type="end" data-unit="h" maxlength="2" inputmode="numeric" class="${seg.endTime >= 3600 ? '' : 'disabled'} ${seg.isDirty ? 'modified' : ''}" value="${eH}" ${isShort?'disabled':''}>:
+                            <input type="text" data-id="${seg.id}" data-type="end" data-unit="m" maxlength="2" inputmode="numeric" class="${seg.isDirty ? 'modified' : ''}" value="${eM}">:
+                            <input type="text" data-id="${seg.id}" data-type="end" data-unit="s" maxlength="2" inputmode="numeric" class="${seg.isDirty ? 'modified' : ''}" value="${eS}">
                         </div>
                     </div>
-                    <div style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; min-width: 60px; text-align: right;">
-                        (${(seg.endTime-seg.startTime).toFixed(1)}s)
+                    <div class="clip-dur-text" style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; min-width: 80px; text-align: right; flex-shrink: 0;">
+                        ${formatDurationLong(seg.endTime-seg.startTime)}
                     </div>
-                    <div style="margin-left: auto; display: flex; gap: 0.3rem;">
-                        <button id="btn-save-${seg.id}" onclick="saveInPlace('${seg.id}')" class="btn-icon" style="color: #10b981; padding: 2px;" title="저장"><i class="fas fa-check-circle"></i></button>
-                        <button onclick="removeSegment('${seg.id}')" class="btn-icon" style="color: #ef4444; padding: 2px;" title="삭제"><i class="fas fa-trash"></i></button>
+                    <div style="margin-left: auto; display: flex; gap: 3px; flex-shrink: 0;">
+                        <button id="btn-save-${seg.id}" onclick="saveInPlace('${seg.id}')" class="btn-icon ${seg.isDirty ? 'modified-btn' : ''}" style="color: #10b981; padding: 2px; width: 26px; height: 26px;" title="저장"><i class="fas fa-check-circle" style="font-size: 1.1rem;"></i></button>
+                        <button onclick="removeSegment('${seg.id}')" class="btn-icon" style="color: #ef4444; padding: 2px; width: 26px; height: 26px;" title="삭제"><i class="fas fa-trash" style="font-size: 1.1rem;"></i></button>
                     </div>
                 </div>
             `;
-            timelineList.appendChild(div);
-        });
+            // Add auto-tabbing and formatting for timeline inputs
+            div.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    // Strict 2 digit limit and numeric only
+                    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 2);
+                    const val = e.target.value;
+                    
+                    e.target.classList.add('modified');
+                    seg.isDirty = true; // Mark as dirty
+                    const saveBtn = document.getElementById(`btn-save-${seg.id}`);
+                    if (saveBtn) saveBtn.classList.add('modified-btn');
+                    
+                    if (val.length >= 2) {
+                        const rowInputs = Array.from(div.querySelectorAll('input'));
+                        const idx = rowInputs.indexOf(e.target);
+                        // Skip disabled inputs (like HH if short video)
+                        const nextInputs = rowInputs.slice(idx + 1).filter(inp => !inp.disabled && inp.style.display !== 'none');
+                        if (nextInputs.length > 0) {
+                            const next = nextInputs[0];
+                            next.focus();
+                            setTimeout(() => next.select(), 10);
+                        }
+                    }
+                });
+                input.addEventListener('focus', (e) => {
+                    e.target.select();
+                });
+                input.addEventListener('blur', (e) => {
+                    const val = (parseInt(e.target.value) || 0).toString().padStart(2, '0');
+                    e.target.value = val;
+                });
+            });
 
-        // Add auto-tabbing and formatting for timeline inputs
-        timelineList.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', (e) => {
-                const val = e.target.value;
-                if (val.length > 2) e.target.value = val.slice(0, 2);
-                
-                e.target.classList.add('modified');
-                const saveBtn = document.getElementById(`btn-save-${e.target.dataset.id}`);
-                if (saveBtn) saveBtn.classList.add('modified-btn');
-                
-                if (e.target.value.length >= 2) {
-                    let next = e.target.nextElementSibling;
-                    if (next && next.tagName === 'INPUT') next.focus();
-                }
-            });
-            input.addEventListener('blur', (e) => {
-                const val = (parseInt(e.target.value) || 0).toString().padStart(2, '0');
-                e.target.value = val;
-            });
+            timelineList.appendChild(div);
         });
     }
 
@@ -392,7 +481,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return; 
         }
 
-        timelineSegments.push({ id: 'seg_' + Date.now(), sourceId: currentSourceId, startTime: start, endTime: end });
+        timelineSegments.push({ 
+            id: 'seg_' + Date.now(), 
+            sourceId: currentSourceId, 
+            startTime: start, 
+            endTime: end,
+            isDirty: false // Track edit state
+        });
         renderTimeline();
         updateExportState();
         
@@ -410,12 +505,23 @@ document.addEventListener('DOMContentLoaded', () => {
     window.saveInPlace = (id) => {
         const seg = timelineSegments.find(s => s.id === id);
         if (!seg) return;
-        const inputs = timelineList.querySelectorAll(`input[data-id="${id}"]`);
+        const row = document.getElementById(`row-${id}`);
+        if (!row) return;
+
+        const inputs = row.querySelectorAll(`input[data-id="${id}"]`);
         let sh=0, sm=0, ss=0, eh=0, em=0, es=0;
         inputs.forEach(i => {
             const v = parseInt(i.value) || 0;
-            if (i.dataset.type === 'start') { if (i.dataset.unit==='h') sh=v; if (i.dataset.unit==='m') sm=v; if (i.dataset.unit==='s') ss=v; }
-            else { if (i.dataset.unit==='h') eh=v; if (i.dataset.unit==='m') em=v; if (i.dataset.unit==='s') es=v; }
+            if (i.dataset.type === 'start') { 
+                if (i.dataset.unit==='h') sh=v; 
+                else if (i.dataset.unit==='m') sm=v; 
+                else if (i.dataset.unit==='s') ss=v; 
+            }
+            else { 
+                if (i.dataset.unit==='h') eh=v; 
+                else if (i.dataset.unit==='m') em=v; 
+                else if (i.dataset.unit==='s') es=v; 
+            }
         });
         const start = sh*3600 + sm*60 + ss;
         const end = eh*3600 + em*60 + es;
@@ -428,26 +534,62 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return; 
         }
-        seg.startTime = start; seg.endTime = end;
-        renderTimeline();
+        seg.startTime = start; 
+        seg.endTime = end;
+        seg.isDirty = false;
+
+        // Visual feedback only for this row
+        const saveBtn = document.getElementById(`btn-save-${id}`);
+        if (saveBtn) saveBtn.classList.remove('modified-btn');
+        row.querySelectorAll('input').forEach(i => i.classList.remove('modified'));
+        
+        const durText = row.querySelector('.clip-dur-text');
+        if (durText) durText.textContent = formatDurationLong(end - start);
+        
+        showToast("구간 설정이 저장되었습니다.", "success");
+        console.log(`Segment ${id} saved independently.`);
     };
 
-    window.removeSegment = (id) => { timelineSegments = timelineSegments.filter(s => s.id !== id); renderTimeline(); updateExportState(); };
-
-    // --- Main Time Inputs ---
-    [...Object.values(startInputs), ...Object.values(endInputs)].forEach(input => {
-        input.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if (val.length > 2) e.target.value = val.slice(0, 2);
-            
-            if (e.target.value.length >= 2) {
-                let next = e.target.nextElementSibling;
-                if (next && next.tagName === 'INPUT') next.focus();
-            }
-            calculateClipDuration();
+    window.removeSegment = async (id) => { 
+        const result = await Swal.fire({
+            title: '구간 삭제',
+            text: '이 구간을 삭제하시겠습니까?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '삭제',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#ef4444'
         });
-        input.addEventListener('blur', (e) => { e.target.value = (parseInt(e.target.value) || 0).toString().padStart(2, '0'); });
-    });
+
+        if (result.isConfirmed) {
+            timelineSegments = timelineSegments.filter(s => s.id !== id); 
+            renderTimeline(); 
+            updateExportState(); 
+        }
+    };
+
+    if (btnClearAll) {
+        btnClearAll.addEventListener('click', async () => {
+            if (timelineSegments.length === 0) return;
+            const result = await Swal.fire({
+                title: '전체 초기화',
+                text: '모든 구간 기록을 삭제하시겠습니까?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '초기화',
+                cancelButtonText: '취소',
+                confirmButtonColor: '#ef4444'
+            });
+
+            if (result.isConfirmed) {
+                timelineSegments = [];
+                renderTimeline();
+                updateExportState();
+                Swal.fire('초기화 완료', '모든 구간이 삭제되었습니다.', 'success');
+            }
+        });
+    }
+
 
     btnSetStart.addEventListener('click', () => {
         const t = player.currentTime || 0;
@@ -467,9 +609,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Export ---
     btnExport.addEventListener('click', async () => {
         if (timelineSegments.length === 0) return;
-        modalTitle.textContent = '비디오 렌더링 중...';
-        modalMessage.innerHTML = `${timelineSegments.length}개의 구간을 합치는 중입니다.`;
-        modalProgress.style.display = 'block';
+
+        const result = await Swal.fire({
+            title: '작업을 진행할까요?',
+            text: '동영상 인코딩 및 내보내기를 시작합니다.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '진행',
+            cancelButtonText: '취소',
+            confirmButtonColor: 'var(--accent-color)'
+        });
+
+        if (!result.isConfirmed) return;
+        
+        const isSeparate = checkSeparate?.checked || false;
+    const isPrecision = currentMode === 'precision';
+    
+    modalTitle.textContent = isSeparate ? '개별 구간 저장 중...' : '비디오 렌더링 중...';
+    modalMessage.innerHTML = isSeparate 
+        ? `${timelineSegments.length}개의 구간을 각각 저장하고 있습니다. (${isPrecision ? '정밀모드' : '고속모드'})` 
+        : `${timelineSegments.length}개의 구간을 하나로 합치는 중입니다. (${isPrecision ? '정밀모드' : '고속모드'})`;
+    modalProgress.style.display = 'block';
         progressBar.style.width = '0%';
         modal.classList.add('active');
         timeFeedback.textContent = '초기화 중...';
@@ -496,6 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let listContent = '';
             const total = timelineSegments.length;
+            const originalName = src.name.substring(0, src.name.lastIndexOf('.')) || src.name;
 
             for (let i = 0; i < total; i++) {
                 const seg = timelineSegments[i];
@@ -507,8 +668,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressText.textContent = `클립 ${i+1} 작업 중... (${basePercent.toFixed(1)}%)`;
                 timeFeedback.textContent = `경과 시간: ${elapsedSeconds.toFixed(1)}s | 예상 남은 시간: 계산 중...`;
 
-                await ffmpeg.run('-ss', seg.startTime.toString(), '-i', 'input.mp4', '-t', dur.toString(), '-c', 'copy', `part${i}.mp4`);
-                listContent += `file 'part${i}.mp4'\n`;
+                const partName = `part${i}.mp4`;
+                
+                if (isPrecision) {
+                    // Precision Mode: Re-encode
+                    await ffmpeg.run(
+                        '-ss', seg.startTime.toString(), 
+                        '-i', 'input.mp4', 
+                        '-t', dur.toString(), 
+                        '-vcodec', 'libx264',
+                        '-preset', 'ultrafast',
+                        '-acodec', 'aac',
+                        '-map_metadata', '0',
+                        '-movflags', '+faststart',
+                        partName
+                    );
+                } else {
+                    // Fast Mode: Stream Copy
+                    await ffmpeg.run(
+                        '-ss', seg.startTime.toString(), 
+                        '-i', 'input.mp4', 
+                        '-t', dur.toString(), 
+                        '-c', 'copy', 
+                        '-avoid_negative_ts', 'make_zero', 
+                        '-map_metadata', '0',
+                        '-movflags', '+faststart',
+                        partName
+                    );
+                }
+                
+                if (isSeparate) {
+                    // Download immediately if separate export is on
+                    const data = ffmpeg.FS('readFile', partName);
+                    const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `[cut]${(i+1).toString().padStart(2, '0')}-${originalName}.mp4`;
+                    a.click();
+                    // Small delay to prevent browser blockage on multiple downloads
+                    await new Promise(r => setTimeout(r, 300));
+                } else {
+                    listContent += `file '${partName}'\n`;
+                }
                 
                 const currentElapsed = (Date.now() - startTime) / 1000;
                 const estTotal = (currentElapsed / (i + 1)) * total;
@@ -518,30 +719,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 timeFeedback.textContent = `경과 시간: ${currentElapsed.toFixed(0)}s | 예상 잔여 시간: ${remaining.toFixed(0)}s`;
             }
 
-            await ffmpeg.FS('writeFile', 'list.txt', listContent);
-            console.log("Concat list created:\n", listContent);
-            
-            progressText.textContent = '클립들을 하나로 합치는 중...';
-            await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', 'out.mp4');
-            console.log("Merging completed.");
-            
-            progressBar.style.width = '100%';
-            timeFeedback.textContent = `총 작업 완료! (소요 시간: ${((Date.now()-startTime)/1000).toFixed(1)}초)`;
-            
-            const data = ffmpeg.FS('readFile', 'out.mp4');
-            const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-            
-            modalTitle.textContent = '완료!';
-            modalMessage.textContent = '편집된 비디오가 성공적으로 생성되었습니다.';
-            modalProgress.style.display = 'none';
-            const a = document.createElement('a'); a.href = url; a.download = `clip_${Date.now()}.mp4`; a.click();
+            if (!isSeparate) {
+                await ffmpeg.FS('writeFile', 'list.txt', listContent);
+                console.log("Concat list created:\n", listContent);
+                
+                progressText.textContent = '클립들을 하나로 합치는 중...';
+                await ffmpeg.run(
+                    '-f', 'concat', 
+                    '-safe', '0', 
+                    '-i', 'list.txt', 
+                    '-c', 'copy', 
+                    '-avoid_negative_ts', 'make_zero',
+                    '-map_metadata', '0',
+                    '-movflags', '+faststart',
+                    'out.mp4'
+                );
+                console.log("Merging completed.");
+                
+                progressBar.style.width = '100%';
+                timeFeedback.textContent = `총 작업 완료! (소요 시간: ${((Date.now()-startTime)/1000).toFixed(1)}초)`;
+                
+                const data = ffmpeg.FS('readFile', 'out.mp4');
+                const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                
+                modalTitle.textContent = '완료!';
+                modalMessage.textContent = '편집된 비디오가 성공적으로 생성되었습니다.';
+                modalProgress.style.display = 'none';
+                const a = document.createElement('a'); a.href = url; a.download = `[CUT]${originalName}.mp4`; a.click();
+            } else {
+                progressBar.style.width = '100%';
+                timeFeedback.textContent = `모든 구간 추출 완료! (총 ${total}개)`;
+                modalTitle.textContent = '완료!';
+                modalMessage.textContent = '모든 구간이 개별 파일로 저장되었습니다.';
+                modalProgress.style.display = 'none';
+            }
         } catch (err) {
             console.error("CRITICAL EXPORT ERROR:", err);
-            modalTitle.textContent = '오류 발생';
-            modalMessage.textContent = '편집 도중 오류가 발생했습니다: ' + err.message;
-            timeFeedback.textContent = '브라우저 콘솔(F12)에서 상세 내용을 확인하세요.';
             progressText.textContent = '중단됨';
-            alert("편집 오류: " + err.message + "\n\n1GB 미만의 파일인지, 다른 프로그램에서 사용 중인지 확인해 주세요.");
+            Swal.fire({
+                title: '편집 오류',
+                text: `${err.message} (1GB 미만의 파일인지, 다른 프로그램에서 사용 중인지 확인해 주세요.)`,
+                icon: 'error',
+                confirmButtonText: '확인'
+            });
         }
     });
 
@@ -563,22 +783,53 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("수정 기록이 저장되었습니다.");
     });
 
-    const handleRecordFile = (file) => {
-        if (!file.name.endsWith('.txt')) { showToast("유효한 .txt 파일이 아닙니다."); return; }
+    const handleRecordFile = async (file) => {
+        if (!file.name.endsWith('.txt')) { showToast("유효한 .txt 파일이 아닙니다.", "error"); return; }
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const data = JSON.parse(e.target.result);
                 if (!data.clips || !Array.isArray(data.clips)) throw new Error("Invalid Format");
                 
-                if (timelineSegments.length > 0 && !confirm("기존 타임라인 기록을 덮어쓰시겠습니까?")) return;
+                const src = importedSources[0];
+                if (src && data.filename && data.filename !== src.name) {
+                    await Swal.fire({
+                        title: '파일명 불일치',
+                        text: '불러온 기록의 파일명이 현재 작업 중인 파일명과 다릅니다. 확인해주세요.',
+                        icon: 'warning',
+                        confirmButtonText: '확인',
+                        confirmButtonColor: 'var(--accent-color)'
+                    });
+                    // Don't return, user might still want to load it? 
+                    // No, the requirement says "파일명이 다르면 ... 라고 메시지를 띄워줘." 
+                    // I will stop here to be safe and let user decide if I should allow it.
+                    // Actually, let's allow it but warn them. 
+                    // "정말 진행하시겠습니까?"
+                }
+
+                if (timelineSegments.length > 0) {
+                    const confirmRes = await Swal.fire({
+                        title: '덮어쓰기 확인',
+                        text: '기존 타임라인 기록을 덮어쓰시겠습니까?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: '덮어쓰기',
+                        cancelButtonText: '취소'
+                    });
+                    if (!confirmRes.isConfirmed) return;
+                }
                 
-                timelineSegments = data.clips;
+                // Fix: Restore sourceId and isDirty for imported segments
+                timelineSegments = data.clips.map(c => ({
+                    ...c,
+                    sourceId: currentSourceId,
+                    isDirty: false
+                }));
                 renderTimeline();
                 updateExportState();
-                showToast("기록을 성공적으로 불러왔습니다.");
+                showToast("기록을 성공적으로 불러왔습니다.", "success");
             } catch (err) {
-                showToast("기록 파일 파싱 중 오류가 발생했습니다.");
+                showToast("기록 파일 파싱 중 오류가 발생했습니다.", "error");
             }
         };
         reader.readAsText(file);
@@ -590,9 +841,53 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZoneRecords.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneRecords.classList.add('drag-over'); });
     dropZoneRecords.addEventListener('drop', (e) => {
         e.preventDefault();
+        e.stopPropagation(); // Prevent window drop listener from firing
         dropZoneRecords.classList.remove('drag-over');
         if (e.dataTransfer.files[0]) handleRecordFile(e.dataTransfer.files[0]);
     });
+
+    // Help Popup
+    if (btnHelpRecords) {
+        btnHelpRecords.addEventListener('click', () => {
+            Swal.fire({
+                title: '구간기록값 저장 안내',
+                text: '구간기록파일을 저장해두면 같은 파일을 다시 작업할 때 전에 작업한 구간시간기록을 그대로 가져울 수 있습니다.',
+                icon: 'info',
+                confirmButtonText: '확인',
+                confirmButtonColor: 'var(--accent-color)',
+                customClass: {
+                    popup: 'swal2-custom-popup'
+                }
+            });
+        });
+    }
+
+    // Mode Selector Logic
+    modeOptions.forEach(opt => {
+        opt.addEventListener('click', () => {
+            modeOptions.forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+            currentMode = opt.dataset.mode;
+            console.log("Current Mode switched to:", currentMode);
+        });
+    });
+
+    if (btnHelpMode) {
+        btnHelpMode.addEventListener('click', () => {
+            Swal.fire({
+                title: '편집 모드 가이드',
+                html: `
+                    <div style="text-align: left; font-size: 0.9rem;">
+                        <p><b>• 고속모드:</b> 키프레임 단위로 저장되며 정확한 시간 단위는 아니지만 빠르게 작업됩니다. (작업물에 따라 1~3초 정도 영상이 더 진행됩니다.)</p>
+                        <p style="margin-top: 10px;"><b>• 정밀모드:</b> 초 단위까지 정확하게 계산이 되지만 시간이 걸리며 PC(또는 모바일)의 사양에 따라 달라집니다.</p>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: '확인',
+                confirmButtonColor: 'var(--accent-color)'
+            });
+        });
+    }
 
     function showDownloadPrompt(name) {
         modalTitle.textContent = '처리 불가 안내';

@@ -438,19 +438,26 @@
         <div class="main-content-inner">
             <div class="content-wrapper" style="max-width: 1400px;">
                 <div class="container" style="padding: 0.8rem 1rem 0.1rem 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div class="editor-header">
                         <div style="flex: 1;">
-                            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 0.2rem;">
-                                <h1>동영상 구간 자르기</h1>
-                                <p class="subtitle" style="margin-bottom: 0;">브라우저에서 직접 하는 고속 컷편집 (최대 23클립)</p>
+                            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 0.2rem; flex-wrap: wrap;">
+                                <h1 style="margin: 0;">동영상 구간 자르기</h1>
+                                <p class="subtitle" style="margin: 0;">브라우저에서 직접 하는 고속 컷편집 (최대 23클립)</p>
                             </div>
                             <p style="font-size: 0.75rem; color: #ef4444; font-weight: 700; margin-top: 0.1rem;">※ 현재 포맷은 mp4, 용량은 1GB까지 지원합니다.</p>
                         </div>
-                        <button id="btn-export" class="btn-action vibrant" disabled style="padding: 0.6rem 1.8rem; font-size: 1rem; flex-shrink: 0; margin-left: 20px;">저장 및 내보내기 📥</button>
+                        <button id="btn-export" class="btn-action vibrant" disabled style="padding: 0.6rem 1.8rem; font-size: 1rem; flex-shrink: 0;">저장 및 내보내기 📥</button>
                     </div>
                     <div id="toast-container" class="toast-container"></div>
 
-                    <div class="editor-container">
+                    <div class="editor-container" style="position: relative;">
+                        <!-- Loading Overlay -->
+                        <div id="loading-overlay" class="loading-overlay">
+                            <div class="spinner"></div>
+                            <div style="font-weight: 800; color: var(--accent-color);">파일을 읽는 중...</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">잠시만 기다려 주세요.</div>
+                        </div>
+
                         <!-- Media library (Top) -->
                         <div class="card" style="margin-bottom: 0.2rem; padding: 0.4rem;">
                             <div id="media-library" style="display: none;"></div>

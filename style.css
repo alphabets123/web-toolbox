@@ -20,9 +20,9 @@
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
-    overflow: hidden;
+    overflow-x: hidden;
     position: relative;
 }
 
@@ -157,7 +157,7 @@ body {
 .menu-toggle:hover { background: rgba(255,255,255,0.2); }
 
 .main-content-inner {
-    padding: 0.5rem 2rem; /* Reduced from 1rem */
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -307,10 +307,85 @@ body {
     }
     .sidebar.open { left: 0; }
     .sidebar-overlay.open { display: block; opacity: 1; z-index: 50; }
-    .main-content-inner { padding: 1.5rem 1rem; }
-    .top-bar { padding: 0.75rem 1.25rem; }
-    .container { padding: 2rem 1.5rem; }
-    h1 { font-size: 2rem; }
+    .main-content-inner { padding: 0.5rem; }
+    .top-bar { padding: 0.5rem 1rem; }
+    .container { 
+        padding: 1rem; 
+        border-radius: 0.75rem;
+    }
+    h1 { 
+        font-size: 1.5rem; 
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 250px;
+    }
+    .timeline-track { height: 160px; }
+    .btn-action { 
+        padding: 0.6rem 1rem; 
+        font-size: 0.9rem;
+    }
+    .time-group {
+        height: 28px;
+    }
+    .time-group input {
+        width: 28px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Video Editor Specific Mobile UI */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+    gap: 1rem;
+}
+
+@media (max-width: 600px) {
+    .editor-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .editor-header .subtitle {
+        display: block;
+        margin-top: 4px;
+    }
+    #btn-export {
+        width: 100%;
+        margin-left: 0 !important;
+        margin-top: 10px;
+    }
+}
+
+/* Loading Spinner */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    border-radius: 1rem;
+    display: none;
+}
+.loading-overlay.active { display: flex; }
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 .btn-action.vibrant {
     background: linear-gradient(135deg, #f97316, #ea580c);

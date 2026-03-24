@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnClose = document.getElementById('btn-close-modal');
     const btnDownload = document.getElementById('btn-download-app');
     const timeFeedback = document.getElementById('time-feedback');
+    const loadingOverlay = document.getElementById('loading-overlay');
 
     const btnSaveRecords = document.getElementById('btn-save-records');
     const recordsUpload = document.getElementById('records-upload');
@@ -81,33 +82,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 15000);
 
         try {
-            // Check for Cross-Origin Isolation
-            if (!window.crossOriginIsolated) {
-                console.warn("Cross-Origin Isolation is NOT enabled. FFmpeg.wasm may fail.");
-                ffmpegStatus.textContent = "Security Block (COOP/COEP)";
+            // Check for Secure Context
+            if (!window.isSecureContext) {
+                console.warn("Not in a Secure Context. FFmpeg.wasm will likely fail.");
+                ffmpegStatus.textContent = "HTTPS Required";
                 ffmpegStatus.style.color = "#ef4444";
-                return;
+                showToast("보안 연결(HTTPS)이 필요합니다.");
             }
 
-            const localPath = window.location.origin + '/lib/ffmpeg';
-            const cdnPath = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd';
-            
-            // v0.11.0 Fail-safe CDN Loading
-            // Using official matching corePath from factory.
-            await ffmpeg.load();
+            // Check for SharedArrayBuffer
+            if (typeof SharedArrayBuffer === 'undefined') {
+                console.warn("SharedArrayBuffer is NOT available.");
+                ffmpegStatus.textContent = "System Incompatible";
+                ffmpegStatus.style.color = "#ef4444";
+                // Don't return yet, try to load anyway in case of polyfills
+            }
 
+            await ffmpeg.load();
             clearTimeout(timeout);
             ffmpeg.loaded = true;
             ffmpegStatus.textContent = "FFmpeg Ready";
             ffmpegStatus.style.color = "#4caf50";
-            btnTroubleshoot.style.display = 'none'; // Hide if previously shown
-            console.log("FFmpeg loaded successfully with worker fallback.");
+            btnTroubleshoot.style.display = 'none';
         } catch (err) {
             clearTimeout(timeout);
             console.error("FFmpeg load failed:", err);
-            ffmpegStatus.textContent = "FFmpeg Error";
+            ffmpegStatus.textContent = "FFmpeg Load Error";
             ffmpegStatus.style.color = "#ef4444";
-            btnTroubleshoot.style.display = 'inline'; // Show troubleshoot link
+            btnTroubleshoot.style.display = 'inline';
         }
     };
 
@@ -184,13 +186,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Media Library ---
     function handleFiles(files) {
+        if (!files || files.length === 0) return;
         const file = files[0];
+        console.log("File selected:", file.name, "size:", file.size, "type:", file.type);
+        
         if (file.size > MAX_FILE_SIZE) { showDownloadPrompt(file.name); return; }
+        
+        // Show loading state
+        if (loadingOverlay) loadingOverlay.classList.add('active');
         
         const url = URL.createObjectURL(file);
         const video = document.createElement('video');
         video.preload = 'metadata';
+        
+        // Timeout for metadata loading
+        const metadataTimeout = setTimeout(() => {
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
+            showToast("영상 정보를 읽는 데 시간이 너무 오래 걸립니다.");
+            console.warn("Metadata timeout for:", file.name);
+        }, 10000);
+
         video.onloadedmetadata = () => {
+            clearTimeout(metadataTimeout);
+            console.log("Metadata loaded. Duration:", video.duration);
+            
             importedSources = [{
                 id: 'src_' + Date.now(),
                 file: file, url: url, name: file.name,
@@ -200,7 +219,24 @@ document.addEventListener('DOMContentLoaded', () => {
             timelineSegments = [];
             renderMediaList();
             loadSourceIntoPreview(importedSources[0]);
+            
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
+            
+            // Auto-scroll to player on mobile
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    player.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 500);
+            }
         };
+
+        video.onerror = (e) => {
+            clearTimeout(metadataTimeout);
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
+            showToast("동영상을 불러올 수 없습니다. 지원되지 않는 포맷일 수 있습니다.");
+            console.error("Video element error:", e);
+        };
+
         video.src = url;
     }
 
@@ -583,6 +619,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
     });
     
+    // Video Upload Input change listener
+    videoUpload.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleFiles(e.target.files);
+    });
+
     // Also allow clicking the drop zone
-    dropZone.addEventListener('click', () => videoUpload.click());
+    dropZone.addEventListener('click', () => {
+        videoUpload.value = null; // Reset to ensure change event fires even if same file
+        videoUpload.click();
+    });
 });

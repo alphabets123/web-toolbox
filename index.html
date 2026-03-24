@@ -21,8 +21,13 @@
         .tool-card h3 { font-size: 1.15rem; font-weight: 700; color: var(--text-color); }
         .tool-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0; font-weight: 500; }
     </style>
+    <script src="coi-serviceworker.js"></script>
 </head>
 <body>
+    <div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1;">
+        <div class="bg-blob"></div>
+        <div class="bg-blob-2"></div>
+    </div>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="sidebar" id="sidebar">
         <div style="margin-bottom: 2.5rem;">
@@ -35,16 +40,14 @@
             </div>
         </div>
         <nav class="nav-menu">
-            <a href="index.html" class="nav-item active">🏠 대시보드</a>
             <a href="bg-remove.html" class="nav-item">✂️ 배경 제거</a>
-            <a href="#" class="nav-item disabled">🎬 동영상 컷편집</a>
+            <a href="video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
             <a href="#" class="nav-item disabled">⬇️ 유튜브 다운</a>
         </nav>
         
         <!-- 하단 광고 배너 뷰 -->
         <div class="sidebar-footer">
-            <!-- (추후 광고 추가를 위해 주석 처리) <div class="ad-sidebar-box">Ad Space</div> -->
-            &copy; 2026 Snap-Task.<br>No Server Uploads.
+            &copy; 2026 Snap-Task.<br>
         </div>
     </div>
     
@@ -60,9 +63,6 @@
         </header>
 
         <div class="main-content-inner">
-            <div class="bg-blob"></div>
-            <div class="bg-blob-2"></div>
-            
             <!-- 콘텐츠 및 우측 광고 레이아웃 -->
             <div class="content-wrapper">
                 <div class="container">
@@ -78,9 +78,9 @@
                             <p style="margin-top: 0.5rem; color: #d946ef; font-weight: 700; font-size: 0.85rem;">💡 인물/사물이 명확한 사진에 최적화</p>
                         </a>
                         
-                        <a href="#" class="tool-card disabled">
+                        <a href="video-edit.html" class="tool-card">
                             <div class="icon">🎬</div>
-                            <h3>동영상 구간 자르기 (준비중)</h3>
+                            <h3>동영상 구간 자르기</h3>
                             <p>내장된 WebAssembly 엔진을 통해 브라우저에서 직접 빠른 컷편집.</p>
                         </a>
                         

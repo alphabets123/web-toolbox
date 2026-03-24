@@ -11,10 +11,10 @@
     <!-- JSZip 라이브러리 추가 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        h1 { font-size: 2.3rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text-color); }
-        .subtitle { color: var(--accent-color); font-weight: 700; margin-bottom: 1.5rem; }
+        h1 { font-size: 2.3rem; font-weight: 800; margin-bottom: 0.3rem; color: var(--text-color); }
+        .subtitle { color: var(--accent-color); font-weight: 700; margin-bottom: 1rem; }
         
-        .upload-area { border: 2px dashed rgba(0,0,0,0.15); border-radius: 1rem; padding: 3rem 2rem; cursor: pointer; transition: all 0.3s ease; background: #ffffff; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.02); text-align: center; }
+        .upload-area { border: 2px dashed rgba(0,0,0,0.15); border-radius: 1rem; padding: 2rem 1.5rem; cursor: pointer; transition: all 0.3s ease; background: #ffffff; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.02); text-align: center; }
         .upload-area:hover, .upload-area.dragover { border-color: var(--accent-color); background: rgba(99, 102, 241, 0.05); box-shadow: 0 10px 20px rgba(99,102,241,0.06); }
         .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
         .upload-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-color); }
@@ -60,8 +60,13 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-text { color: var(--accent-color); font-weight: 800; font-size: 1.1rem; }
     </style>
+    <script src="coi-serviceworker.js"></script>
 </head>
 <body>
+    <div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1;">
+        <div class="bg-blob"></div>
+        <div class="bg-blob-2"></div>
+    </div>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="sidebar" id="sidebar">
         <div style="margin-bottom: 2.5rem;">
@@ -74,14 +79,12 @@
             </div>
         </div>
         <nav class="nav-menu">
-            <a href="index.html" class="nav-item">🏠 대시보드</a>
             <a href="bg-remove.html" class="nav-item active">✂️ 배경 제거</a>
-            <a href="#" class="nav-item disabled">🎬 동영상 컷편집</a>
+            <a href="video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
             <a href="#" class="nav-item disabled">⬇️ 유튜브 다운</a>
         </nav>
         <div class="sidebar-footer">
-            <!-- (추후 광고 추가를 위해 주석 처리) <div class="ad-sidebar-box">Ad Space</div> -->
-            &copy; 2026 Snap-Task.<br>No Server Uploads.
+            &copy; 2026 Snap-Task.<br>
         </div>
     </div>
 
@@ -96,16 +99,13 @@
         </header>
 
         <div class="main-content-inner">
-            <div class="bg-blob"></div>
-            <div class="bg-blob-2"></div>
-            
             <div class="content-wrapper">
                 <div class="container" style="text-align: center;">
                     <h1>배경화면 제거</h1>
                     <p class="subtitle">AI 기반 초고속 누끼 따기 (100% 프라이빗)</p>
 
                     <!-- Tabs -->
-                    <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
                         <div class="tabs-container" style="margin: 0;">
                             <button class="tab-btn active" id="tabSingleMode">단일 이미지 (1장)</button>
                             <button class="tab-btn" id="tabBatchMode">다중 일괄 처리 (최대 10장)</button>

@@ -317,42 +317,113 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Media Library ---
-    function handleFiles(files) {
+    async function remuxForPreview(file) {
+        if (!ffmpeg.loaded) {
+            showToast("FFmpeg가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.", "warning");
+            return null;
+        }
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        const inputName = `input_preview.${ext}`;
+        const outputName = 'preview.mp4';
+
+        try {
+            // Show loading state with specific message
+            if (loadingOverlay) {
+                const titleEl = loadingOverlay.querySelector('div:nth-child(2)');
+                const subEl = loadingOverlay.querySelector('div:nth-child(3)');
+                if (titleEl) titleEl.textContent = "미리보기 준비 중...";
+                if (subEl) subEl.textContent = "비호환 포맷(MKV, AVI 등)을 변환하고 있습니다.";
+                loadingOverlay.classList.add('active');
+            }
+
+            console.log("Remuxing for preview started:", file.name);
+            const data = await fetchFile(file);
+            await ffmpeg.FS('writeFile', inputName, data);
+
+            // Fast Remux: -c copy
+            await ffmpeg.run('-i', inputName, '-c', 'copy', '-movflags', '+faststart', outputName);
+            
+            const outData = await ffmpeg.FS('readFile', outputName);
+            const blob = new Blob([outData.buffer], { type: 'video/mp4' });
+            const previewUrl = URL.createObjectURL(blob);
+
+            // Cleanup FS immediately to save memory
+            await ffmpeg.FS('unlink', inputName);
+            await ffmpeg.FS('unlink', outputName);
+
+            console.log("Remuxing for preview finished.");
+            return previewUrl;
+        } catch (err) {
+            console.error("Remuxing failed, attempting safe remux (re-encode):", err);
+            try {
+                // Fallback: Safe Remux (Low res, ultrafast encoding for preview only)
+                await ffmpeg.run('-i', inputName, '-vf', 'scale=-2:480', '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-movflags', '+faststart', outputName);
+                const outData = await ffmpeg.FS('readFile', outputName);
+                const blob = new Blob([outData.buffer], { type: 'video/mp4' });
+                const previewUrl = URL.createObjectURL(blob);
+                
+                await ffmpeg.FS('unlink', inputName);
+                await ffmpeg.FS('unlink', outputName);
+                return previewUrl;
+            } catch (err2) {
+                console.error("Safe remux also failed:", err2);
+                showToast("미리보기 변환에 실패했습니다. 수동 입력을 이용해 주세요.", "error");
+                return null;
+            }
+        } finally {
+            if (loadingOverlay) {
+                const titleEl = loadingOverlay.querySelector('div:nth-child(2)');
+                const subEl = loadingOverlay.querySelector('div:nth-child(3)');
+                if (titleEl) titleEl.textContent = "파일을 읽는 중...";
+                if (subEl) subEl.textContent = "잠시만 기다려 주세요.";
+                loadingOverlay.classList.remove('active');
+            }
+        }
+    }
+
+    async function handleFiles(files) {
         if (!files || files.length === 0) return;
         const file = files[0];
         
-        // Safety check: Ignore text files (records) in video handler
-        if (file.name.toLowerCase().endsWith('.txt')) {
-            console.log("Record file ignored in video handler:", file.name);
-            return;
+        if (file.name.toLowerCase().endsWith('.txt')) return;
+        if (file.size > MAX_FILE_SIZE) { showDownloadPrompt(file.name); return; }
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        const isNative = ['mp4', 'webm', 'mov', 'm4v'].includes(ext);
+        
+        let previewUrl = null;
+
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('active');
         }
 
-        console.log("File selected:", file.name, "size:", file.size, "type:", file.type);
+        if (!isNative) {
+            previewUrl = await remuxForPreview(file);
+        } else {
+            previewUrl = URL.createObjectURL(file);
+        }
         
-        if (file.size > MAX_FILE_SIZE) { showDownloadPrompt(file.name); return; }
-        
-        // Show loading state
-        if (loadingOverlay) loadingOverlay.classList.add('active');
-        
-        const url = URL.createObjectURL(file);
+        // Use the original file's URL for reference if remux failed or it's native
+        const sourceUrl = previewUrl || URL.createObjectURL(file);
+
         const video = document.createElement('video');
         video.preload = 'metadata';
         
-        // Timeout for metadata loading
         const metadataTimeout = setTimeout(() => {
             if (loadingOverlay) loadingOverlay.classList.remove('active');
             showToast("영상 정보를 읽는 데 시간이 너무 오래 걸립니다.");
-            console.warn("Metadata timeout for:", file.name);
-        }, 10000);
+        }, 15000);
 
         video.onloadedmetadata = () => {
             clearTimeout(metadataTimeout);
-            console.log("Metadata loaded. Duration:", video.duration);
-            
             importedSources = [{
                 id: 'src_' + Date.now(),
-                file: file, url: url, name: file.name,
-                duration: video.duration || 0
+                file: file, 
+                url: sourceUrl, 
+                name: file.name,
+                duration: video.duration || 0,
+                isRemuxed: !isNative && !!previewUrl
             }];
             currentSourceId = importedSources[0].id;
             timelineSegments = [];
@@ -360,23 +431,15 @@ document.addEventListener('DOMContentLoaded', () => {
             loadSourceIntoPreview(importedSources[0]);
             
             if (loadingOverlay) loadingOverlay.classList.remove('active');
-            
-            // Auto-scroll to player on mobile
-            if (window.innerWidth <= 768) {
-                setTimeout(() => {
-                    player.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 500);
-            }
         };
 
-        video.onerror = (e) => {
+        video.onerror = () => {
             clearTimeout(metadataTimeout);
             if (loadingOverlay) loadingOverlay.classList.remove('active');
             showToast("동영상을 불러올 수 없습니다. 지원되지 않는 포맷일 수 있습니다.");
-            console.error("Video element error:", e);
         };
 
-        video.src = url;
+        video.src = sourceUrl;
     }
 
     function renderMediaList() {
@@ -427,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ext = src.name.split('.').pop().toLowerCase();
         const isNative = ['mp4', 'webm', 'mov', 'm4v'].includes(ext);
 
-        if (isNative) {
+        if (isNative || src.isRemuxed) {
             player.style.display = 'block';
             customControls.style.display = 'flex';
             player.src = src.url;
@@ -742,7 +805,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const speed = checkSpeed.checked ? (parseFloat(inputSpeed.value) || 1.0) : 1.0;
             const speedPrefix = speed !== 1.0 ? `[x${speed.toFixed(1)}]` : "";
-            const finalFilename = `${speedPrefix}[cut]${src.name}`;
+            const finalFilename = `${speedPrefix}[cut]${originalName}.mp4`;
             
             // Helper for atempo filter chaining
             const getAtempoFilter = (s) => {
@@ -838,6 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalTitle.textContent = '완료!';
                 modalMessage.textContent = '편집된 비디오가 성공적으로 생성되었습니다.';
                 modalProgress.style.display = 'none';
+                btnClose.textContent = '닫기'; // Restore button text
             } else {
                 progressBar.style.width = '100%';
                 if (modalTimer) clearInterval(modalTimer);
@@ -1006,6 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalTitle.textContent = '처리 불가 안내';
         modalMessage.innerHTML = `[${name}] 파일이 1GB를 초과합니다.<br>대용량은 전용 PC 프로그램을 사용해 주세요.`;
         btnDownload.style.display = 'block';
+        btnClose.textContent = '닫기';
         modal.classList.add('active');
     }
 

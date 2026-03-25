@@ -53,12 +53,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnHelpMode = document.getElementById('btn-help-mode');
     let currentMode = 'precision'; // Default mode
 
+    const checkSpeed = document.getElementById('check-speed');
+    const inputSpeed = document.getElementById('input-speed');
+    const volumeSlider = document.getElementById('volume-slider');
+    let currentSpeed = 1.0;
+
     const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024;
     const MAX_CLIPS = 23;
     let importedSources = []; 
     let timelineSegments = []; 
     let currentSourceId = null;
     let editingSegmentId = null;
+    let modalTimer = null; // Timer for real-time elapsed time in modal
+    let isExporting = false; // Flag for cancellation
 
     // --- Toast & Shake ---
     function showToast(msg, icon = 'info') {
@@ -144,6 +151,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    checkSpeed.addEventListener('change', () => {
+        inputSpeed.disabled = !checkSpeed.checked;
+        if (checkSpeed.checked) {
+            currentSpeed = parseFloat(inputSpeed.value) || 2.0; 
+        } else {
+            currentSpeed = 1.0;
+        }
+        renderTimeline();
+        calculateClipDuration();
+    });
+
+    checkSeparate.addEventListener('change', () => {
+        if (checkSeparate.checked) {
+            timelineList.classList.add('separate-mode');
+        } else {
+            timelineList.classList.remove('separate-mode');
+        }
+    });
+    if (checkSeparate.checked) timelineList.classList.add('separate-mode');
+
+    inputSpeed.addEventListener('input', () => {
+        // Enforce max length of 4 characters manually (e.g. 9.99)
+        if (inputSpeed.value.length > 4) {
+            inputSpeed.value = inputSpeed.value.slice(0, 4);
+        }
+        
+        let val = parseFloat(inputSpeed.value);
+        if (isNaN(val)) return;
+        if (val < 0.1) {
+            val = 0.1;
+            if (inputSpeed.value.length >= 2 && !inputSpeed.value.includes('.')) {
+                inputSpeed.value = "0.1";
+            }
+        }
+        if (val > 9.99) { // Adjusted to match potential 2-decimal max
+            val = 9.99;
+            inputSpeed.value = "9.99";
+        }
+        currentSpeed = val;
+        renderTimeline();
+        calculateClipDuration();
+    });
+
+    inputSpeed.addEventListener('blur', () => {
+        let val = parseFloat(inputSpeed.value);
+        if (inputSpeed.value === "" || isNaN(val)) {
+            inputSpeed.value = "2.0";
+            currentSpeed = 2.0;
+            showToast("배속 값이 비어있어 기본값(2.0)으로 복구되었습니다.", "info");
+        } else if (val < 0.1) {
+            inputSpeed.value = "0.1";
+            currentSpeed = 0.1;
+            showToast("최소 배속은 0.1배입니다.", "info");
+        }
+        renderTimeline();
+        calculateClipDuration();
+    });
+
+    inputSpeed.addEventListener('focus', () => {
+        inputSpeed.select();
+    });
+
     loadFFmpeg();
 
     // --- Custom Controls Logic ---
@@ -195,7 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateClipDuration() {
         const start = (parseInt(startInputs.hh.value) || 0) * 3600 + (parseInt(startInputs.mm.value) || 0) * 60 + (parseInt(startInputs.ss.value) || 0);
         const end = (parseInt(endInputs.hh.value) || 0) * 3600 + (parseInt(endInputs.mm.value) || 0) * 60 + (parseInt(endInputs.ss.value) || 0);
-        clipDurationText.textContent = Math.max(0, end - start).toFixed(1);
+        const diff = Math.max(0, end - start);
+        const speedAdjusted = diff / currentSpeed;
+        clipDurationText.textContent = `${speedAdjusted.toFixed(1)}s (${diff})`;
         
         if (end <= start && (parseInt(endInputs.ss.value) || 0) > 0) {
             shakeInput('end-s');
@@ -423,8 +494,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <input type="text" data-id="${seg.id}" data-type="end" data-unit="s" maxlength="2" inputmode="numeric" class="${seg.isDirty ? 'modified' : ''}" value="${eS}">
                         </div>
                     </div>
-                    <div class="clip-dur-text" style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; min-width: 80px; text-align: right; flex-shrink: 0;">
-                        ${formatDurationLong(seg.endTime-seg.startTime)}
+                    <div class="clip-dur-text ${currentSpeed !== 1.0 ? 'speed-active-text' : ''}" style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; min-width: 80px; text-align: right; flex-shrink: 0;">
+                        ${formatDurationLong((seg.endTime - seg.startTime) / currentSpeed)}
                     </div>
                     <div style="margin-left: auto; display: flex; gap: 3px; flex-shrink: 0;">
                         <button id="btn-save-${seg.id}" onclick="saveInPlace('${seg.id}')" class="btn-icon ${seg.isDirty ? 'modified-btn' : ''}" style="color: #10b981; padding: 2px; width: 26px; height: 26px;" title="저장"><i class="fas fa-check-circle" style="font-size: 1.1rem;"></i></button>
@@ -538,16 +609,12 @@ document.addEventListener('DOMContentLoaded', () => {
         seg.endTime = end;
         seg.isDirty = false;
 
-        // Visual feedback only for this row
-        const saveBtn = document.getElementById(`btn-save-${id}`);
-        if (saveBtn) saveBtn.classList.remove('modified-btn');
-        row.querySelectorAll('input').forEach(i => i.classList.remove('modified'));
-        
-        const durText = row.querySelector('.clip-dur-text');
-        if (durText) durText.textContent = formatDurationLong(end - start);
+        // Visual feedback & Refresh all to ensure speed display is correct
+        renderTimeline();
+        updateExportState();
         
         showToast("구간 설정이 저장되었습니다.", "success");
-        console.log(`Segment ${id} saved independently.`);
+        console.log(`Segment ${id} saved independently with current speed: ${currentSpeed}`);
     };
 
     window.removeSegment = async (id) => { 
@@ -608,7 +675,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Export ---
     btnExport.addEventListener('click', async () => {
-        if (timelineSegments.length === 0) return;
+        if (timelineSegments.length === 0) { // Assuming timelineSegments is the correct array for cut segments
+            showToast("먼저 편집할 구간을 추가해주세요.", "warning");
+            return;
+        }
 
         const result = await Swal.fire({
             title: '작업을 진행할까요?',
@@ -631,10 +701,22 @@ document.addEventListener('DOMContentLoaded', () => {
         : `${timelineSegments.length}개의 구간을 하나로 합치는 중입니다. (${isPrecision ? '정밀모드' : '고속모드'})`;
     modalProgress.style.display = 'block';
         progressBar.style.width = '0%';
+        progressBar.classList.add('working'); // Add animated stripe pattern
         modal.classList.add('active');
-        timeFeedback.textContent = '초기화 중...';
+        btnClose.textContent = '작업 중단(취소)'; // Change button text during work
+        isExporting = true; 
+        timeFeedback.textContent = '00:00:00';
 
-        let startTime = Date.now();
+        const startTime = Date.now();
+        let seconds = 0;
+        if (modalTimer) clearInterval(modalTimer);
+        modalTimer = setInterval(() => {
+            seconds++;
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            timeFeedback.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }, 1000);
         
         // v0.11.0 Progress handling
         ffmpeg.setProgress(({ ratio }) => {
@@ -658,52 +740,65 @@ document.addEventListener('DOMContentLoaded', () => {
             const total = timelineSegments.length;
             const originalName = src.name.substring(0, src.name.lastIndexOf('.')) || src.name;
 
+            const speed = checkSpeed.checked ? (parseFloat(inputSpeed.value) || 1.0) : 1.0;
+            const speedPrefix = speed !== 1.0 ? `[x${speed.toFixed(1)}]` : "";
+            const finalFilename = `${speedPrefix}[cut]${src.name}`;
+            
+            // Helper for atempo filter chaining
+            const getAtempoFilter = (s) => {
+                let filters = [];
+                let temp = s;
+                while (temp > 2.0) { filters.push("atempo=2.0"); temp /= 2.0; }
+                while (temp < 0.5) { filters.push("atempo=0.5"); temp /= 0.5; }
+                if (temp !== 1.0) filters.push(`atempo=${temp.toFixed(2)}`);
+                return filters.join(',');
+            };
+
+            const videoFilter = speed !== 1.0 ? `setpts=1/${speed}*PTS` : "";
+            const audioFilter = speed !== 1.0 ? getAtempoFilter(speed) : "";
+
             for (let i = 0; i < total; i++) {
                 const seg = timelineSegments[i];
                 const dur = seg.endTime - seg.startTime;
-                
-                const elapsedSeconds = (Date.now() - startTime) / 1000;
-                const basePercent = (i / total) * 100;
-                
-                progressText.textContent = `클립 ${i+1} 작업 중... (${basePercent.toFixed(1)}%)`;
-                timeFeedback.textContent = `경과 시간: ${elapsedSeconds.toFixed(1)}s | 예상 남은 시간: 계산 중...`;
-
                 const partName = `part${i}.mp4`;
                 
-                if (isPrecision) {
-                    // Precision Mode: Re-encode
-                    await ffmpeg.run(
-                        '-ss', seg.startTime.toString(), 
-                        '-i', 'input.mp4', 
-                        '-t', dur.toString(), 
-                        '-vcodec', 'libx264',
+                const basePercent = (i / total) * 100;
+                progressText.textContent = `클립 ${i+1} 작업 중... (${basePercent.toFixed(1)}%)`;
+                // Real-time timer handled by setInterval
+
+                if (speed !== 1.0) {
+                    // Safe Input Seeking: -ss/ -t before -i ensures PTS starts at 0
+                    const args = [
+                        '-y',
+                        '-ss', seg.startTime.toString(),
+                        '-t', dur.toString(),
+                        '-i', 'input.mp4',
+                        '-vf', `setpts=1/${speed}*PTS`,
+                        '-af', audioFilter,
+                        '-c:v', 'libx264',
                         '-preset', 'ultrafast',
-                        '-acodec', 'aac',
-                        '-map_metadata', '0',
+                        '-c:a', 'aac',
                         '-movflags', '+faststart',
                         partName
-                    );
+                    ];
+                    console.log("Processing SPEED export:", speed, "Args:", args.join(' '));
+                    await ffmpeg.run(...args);
+                } else if (currentMode === 'precision') {
+                    // Precision Mode: Re-encode
+                    await ffmpeg.run('-ss', seg.startTime.toString(), '-i', 'input.mp4', '-t', dur.toString(), '-vcodec', 'libx264', '-preset', 'ultrafast', '-acodec', 'aac', '-map_metadata', '0', '-movflags', '+faststart', partName);
                 } else {
                     // Fast Mode: Stream Copy
-                    await ffmpeg.run(
-                        '-ss', seg.startTime.toString(), 
-                        '-i', 'input.mp4', 
-                        '-t', dur.toString(), 
-                        '-c', 'copy', 
-                        '-avoid_negative_ts', 'make_zero', 
-                        '-map_metadata', '0',
-                        '-movflags', '+faststart',
-                        partName
-                    );
+                    await ffmpeg.run('-ss', seg.startTime.toString(), '-i', 'input.mp4', '-t', dur.toString(), '-c', 'copy', '-avoid_negative_ts', 'make_zero', '-map_metadata', '0', '-movflags', '+faststart', partName);
                 }
                 
                 if (isSeparate) {
                     // Download immediately if separate export is on
-                    const data = ffmpeg.FS('readFile', partName);
-                    const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                    const data = await ffmpeg.FS('readFile', partName);
+                    const blob = new Blob([data.buffer], { type: 'video/mp4' });
+                    const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `[cut]${(i+1).toString().padStart(2, '0')}-${originalName}.mp4`;
+                    a.download = `${speedPrefix}[cut]clip${(i+1).toString().padStart(2, '0')}_${originalName}.mp4`;
                     a.click();
                     // Small delay to prevent browser blockage on multiple downloads
                     await new Promise(r => setTimeout(r, 300));
@@ -711,12 +806,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     listContent += `file '${partName}'\n`;
                 }
                 
-                const currentElapsed = (Date.now() - startTime) / 1000;
-                const estTotal = (currentElapsed / (i + 1)) * total;
-                const remaining = Math.max(0, estTotal - currentElapsed);
-                
-                progressBar.style.width = `${((i+1)/total)*85}%`;
-                timeFeedback.textContent = `경과 시간: ${currentElapsed.toFixed(0)}s | 예상 잔여 시간: ${remaining.toFixed(0)}s`;
+                // Progress bar update (underlying status)
+                progressBar.style.width = `${((i+1)/total)*100}%`;
             }
 
             if (!isSeparate) {
@@ -724,37 +815,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("Concat list created:\n", listContent);
                 
                 progressText.textContent = '클립들을 하나로 합치는 중...';
-                await ffmpeg.run(
-                    '-f', 'concat', 
-                    '-safe', '0', 
-                    '-i', 'list.txt', 
-                    '-c', 'copy', 
-                    '-avoid_negative_ts', 'make_zero',
-                    '-map_metadata', '0',
-                    '-movflags', '+faststart',
-                    'out.mp4'
-                );
+                await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', '-avoid_negative_ts', 'make_zero', '-map_metadata', '0', '-movflags', '+faststart', 'out.mp4');
                 console.log("Merging completed.");
                 
                 progressBar.style.width = '100%';
-                timeFeedback.textContent = `총 작업 완료! (소요 시간: ${((Date.now()-startTime)/1000).toFixed(1)}초)`;
+                if (modalTimer) clearInterval(modalTimer);
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = Math.floor(seconds % 60);
+                const finalTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                timeFeedback.textContent = `총 작업 완료! (소요 시간: ${finalTime})`;
                 
-                const data = ffmpeg.FS('readFile', 'out.mp4');
-                const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                const data = await ffmpeg.FS('readFile', 'out.mp4');
+                const blob = new Blob([data.buffer], { type: 'video/mp4' });
+                const url = URL.createObjectURL(blob);
                 
+                const a = document.createElement('a'); 
+                a.href = url; 
+                a.download = finalFilename; 
+                a.click();
+
                 modalTitle.textContent = '완료!';
                 modalMessage.textContent = '편집된 비디오가 성공적으로 생성되었습니다.';
                 modalProgress.style.display = 'none';
-                const a = document.createElement('a'); a.href = url; a.download = `[CUT]${originalName}.mp4`; a.click();
             } else {
                 progressBar.style.width = '100%';
-                timeFeedback.textContent = `모든 구간 추출 완료! (총 ${total}개)`;
+                if (modalTimer) clearInterval(modalTimer);
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = Math.floor(seconds % 60);
+                const finalTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                timeFeedback.textContent = `모든 구간 추출 완료! (총 ${total}개, 소요 시간: ${finalTime})`;
                 modalTitle.textContent = '완료!';
                 modalMessage.textContent = '모든 구간이 개별 파일로 저장되었습니다.';
                 modalProgress.style.display = 'none';
+                btnClose.textContent = '닫기'; // Restore button text
             }
         } catch (err) {
+            if (err.message === 'manual_cancel') {
+                console.log("Export cancelled by user.");
+                return; // Silently exit the async function
+            }
             console.error("CRITICAL EXPORT ERROR:", err);
+            modal.classList.remove('active'); // Hide custom modal on error
             progressText.textContent = '중단됨';
             Swal.fire({
                 title: '편집 오류',
@@ -762,6 +865,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 icon: 'error',
                 confirmButtonText: '확인'
             });
+        } finally {
+            isExporting = false; 
+            if (modalTimer) clearInterval(modalTimer);
+            progressBar.classList.remove('working');
         }
     });
 
@@ -850,8 +957,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnHelpRecords) {
         btnHelpRecords.addEventListener('click', () => {
             Swal.fire({
-                title: '구간기록값 저장 안내',
-                text: '구간기록파일을 저장해두면 같은 파일을 다시 작업할 때 전에 작업한 구간시간기록을 그대로 가져울 수 있습니다.',
+                title: '도움말 가이드',
+                html: `
+                    <div style="text-align: left; font-size: 0.9rem;">
+                        <p><b>• 구간기록값 저장:</b> 현재 작업 중인 타임라인을 파일로 저장하여 나중에 다시 불러올 수 있습니다.</p>
+                        <p style="margin-top: 10px;"><b>• 배속 저장:</b> 0.1배에서 9.9배까지 영상 속도를 조절하여 저장할 수 있습니다. 활성화 시 타임라인의 시간 값과 파일명([x배속])이 자동으로 변경됩니다.</p>
+                        <p style="margin-top: 10px;"><b>• 필터 체이닝:</b> 오디오의 경우 고속/저배속 시에도 자연스러운 소리를 위해 다중 필터 처리가 적용됩니다.</p>
+                    </div>
+                `,
                 icon: 'info',
                 confirmButtonText: '확인',
                 confirmButtonColor: 'var(--accent-color)',
@@ -896,7 +1009,41 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('active');
     }
 
-    btnClose.addEventListener('click', () => modal.classList.remove('active'));
+    btnClose.addEventListener('click', async () => {
+        if (isExporting) {
+            const result = await Swal.fire({
+                title: '작업 중단',
+                text: '현재 진행 중인 인코딩 작업을 중단하시겠습니까?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '중단',
+                cancelButtonText: '계속하기',
+                confirmButtonColor: '#ef4444'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    isExporting = false;
+                    // Terminate FFmpeg worker
+                    await ffmpeg.exit(); 
+                    // Need to reload since exit() kills the worker
+                    ffmpeg.loaded = false; 
+                    ffmpegStatus.textContent = "FFmpeg Restarting...";
+                    loadFFmpeg(); 
+                    
+                    modal.classList.remove('active');
+                    showToast("작업이 중단되었습니다.", "info");
+                    
+                    // Trigger error to stop the async export function
+                    throw new Error('manual_cancel'); 
+                } catch (e) {
+                    // This error will be caught by the btnExport's try-catch
+                }
+            }
+        } else {
+            modal.classList.remove('active');
+        }
+    });
 
     // Global Drag & Drop for easier access
     window.addEventListener('dragover', (e) => {
@@ -923,5 +1070,9 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('click', () => {
         videoUpload.value = null; // Reset to ensure change event fires even if same file
         videoUpload.click();
+    });
+
+    volumeSlider.addEventListener('input', () => {
+        player.volume = volumeSlider.value;
     });
 });

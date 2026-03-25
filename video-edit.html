@@ -391,6 +391,29 @@
             background: var(--accent-color);
             width: 0%;
             transition: width 0.3s;
+            position: relative;
+        }
+        
+        /* Animated stripe patterns for indeterminate state */
+        .progress-bar.working {
+            width: 100% !important;
+            background-image: linear-gradient(
+                45deg, 
+                rgba(255, 255, 255, 0.15) 25%, 
+                transparent 25%, 
+                transparent 50%, 
+                rgba(255, 255, 255, 0.15) 50%, 
+                rgba(255, 255, 255, 0.15) 75%, 
+                transparent 75%, 
+                transparent
+            );
+            background-size: 40px 40px;
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            from { background-position: 40px 0; }
+            to { background-position: 0 0; }
         }
         
         #ffmpeg-status { font-size: 0.8rem; font-weight: 700; margin-right: 1rem; }
@@ -484,6 +507,10 @@
                                 <div id="custom-controls" class="custom-controls" style="display: none;">
                                     <button id="btn-play-pause" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-play"></i></button>
                                     <div class="time-display"><span id="current-time">00:00</span> / <span id="total-time">00:00</span></div>
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-left: 10px; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 20px;">
+                                        <i class="fas fa-volume-up" style="color: white; font-size: 0.75rem;"></i>
+                                        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" style="width: 50px; height: 3px; cursor: pointer; accent-color: var(--accent-color);">
+                                    </div>
                                     <input type="range" id="seek-bar" value="0" step="0.1">
                                 </div>
                                 <div class="timeline-pane" style="border-top:none;">
@@ -516,8 +543,8 @@
                                                 <div style="font-size: 0.7rem; color: var(--accent-color); opacity: 0.8;">구간: <span id="segment-count">0</span> / 23</div>
                                             </div>
                                             <div style="display: flex; gap: 4px;">
-                                                <button id="btn-add-segment" class="btn-action primary" style="background: #10b981; padding: 0.5rem 1rem; font-weight: 800;">구간 추가 ➕</button>
-                                                <button id="btn-clear-all" class="btn-action" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: #fee2e2; border-color: #fecaca; color: #991b1b; font-weight: 700;" title="모든 구간 삭제">구간 일괄 삭제 🗑️</button>
+                                                <button id="btn-add-segment" class="btn-action btn-soft-green" style="padding: 0.5rem 1rem; font-weight: 800;">구간 추가 ➕</button>
+                                                <button id="btn-clear-all" class="btn-action btn-soft-red" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; font-weight: 700;" title="모든 구간 삭제">구간 일괄 삭제 🗑️</button>
                                             </div>
                                         </div>
                                     </div>
@@ -526,13 +553,29 @@
                                     <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px dashed #e2e8f0;">
                                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap;">
                                             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                                <label class="premium-switch">
-                                                    <input type="checkbox" id="check-separate">
-                                                    <div class="switch-track">
-                                                        <div class="switch-thumb"></div>
+                                                <div class="option-pill">
+                                                    <label class="premium-switch">
+                                                        <input type="checkbox" id="check-separate">
+                                                        <div class="switch-track">
+                                                            <div class="switch-thumb"></div>
+                                                        </div>
+                                                        <span class="switch-label">구간별 각각 저장</span>
+                                                    </label>
+                                                </div>
+
+                                                <div class="option-pill">
+                                                    <label class="premium-switch">
+                                                        <input type="checkbox" id="check-speed">
+                                                        <div class="switch-track speed-track">
+                                                            <div class="switch-thumb"></div>
+                                                        </div>
+                                                    </label>
+                                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                                        <input type="number" id="input-speed" value="2.0" min="0.1" max="9.9" step="0.01" disabled 
+                                                            style="width: 55px; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 4px; font-size: 0.8rem; font-weight: 800; text-align: center; color: #64748b; background: white;">
+                                                        <span style="font-size: 0.75rem; font-weight: 800; color: #64748b;" class="speed-unit-label">배속</span>
                                                     </div>
-                                                    <span class="switch-label">구간별 각각 저장</span>
-                                                </label>
+                                                </div>
                                                 
                                                 <div style="display: flex; align-items: center; gap: 4px;">
                                                     <div class="mode-toggle" id="mode-selector">
@@ -552,10 +595,10 @@
                                                 <i class="fas fa-file-import"></i>
                                                 <span>기록(.txt) 불러오기 (드래그)</span>
                                             </div>
-                                            <button id="btn-save-records" class="btn-action" style="padding: 0 0.8rem; font-size: 0.75rem; background: #ecfdf5; border-color: #a7f3d0; color: #065f46; white-space: nowrap;">
+                                            <button id="btn-save-records" class="btn-action btn-soft-green" style="padding: 0 1rem; font-size: 0.75rem; white-space: nowrap; font-weight: 700;">
                                                 <i class="fas fa-save" style="margin-right: 4px;"></i> 구간기록값 저장하기
                                             </button>
-                                            <button id="btn-help-records" class="btn-action" style="padding: 0; width: 24px; height: 24px; border-radius: 50%; background: #f1f5f9; color: #64748b; font-size: 0.7rem; flex-shrink: 0;" title="도움말">
+                                            <button id="btn-help-records" class="btn-action btn-soft-gray" style="padding: 0; width: 26px; height: 26px; border-radius: 50%; font-size: 0.7rem; flex-shrink: 0;" title="도움말">
                                                 <i class="fas fa-question"></i>
                                             </button>
                                             <input type="file" id="records-upload" accept=".txt" style="display: none;">

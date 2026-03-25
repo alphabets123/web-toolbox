@@ -412,10 +412,30 @@ body {
     100% { transform: rotate(360deg); }
 }
 .btn-action.vibrant {
-    background: linear-gradient(135deg, #f97316, #ea580c);
+    background: linear-gradient(135deg, var(--accent-color), #4338ca);
     color: white;
     border: none;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    font-weight: 800;
+}
+
+/* Soft Buttons for secondary actions */
+.btn-soft-green {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #065f46 !important;
+}
+
+.btn-soft-red {
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
+    color: #991b1b !important;
+}
+
+.btn-soft-gray {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #64748b !important;
 }
 
 /* Segmented Control (Toggle) */
@@ -586,5 +606,76 @@ input:focus {
 /* Segmented Control Adjustment */
 .mode-toggle {
     margin-right: 4px;
+}
+
+/* Option Pills */
+.option-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.option-pill .premium-switch {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+}
+
+.option-pill .switch-label {
+    color: #64748b;
+    transition: color 0.2s ease;
+}
+
+/* Separate Option Active */
+.option-pill:has(#check-separate:checked) {
+    background: #ecfdf5;
+    border-color: #10b981;
+}
+.option-pill:has(#check-separate:checked) .switch-label {
+    color: #065f46;
+}
+.option-pill:has(#check-separate:checked) .switch-track {
+    background: #10b981;
+}
+
+/* Timeline Separate Mode Visual Feedback */
+.timeline-track.separate-mode .segment-item {
+    border-color: #10b981 !important;
+    background-color: #ecfdf5 !important;
+    border-width: 2px !important;
+}
+
+/* Speed Option Active */
+.option-pill:has(#check-speed:checked) {
+    background: #fff7ed;
+    border-color: #f97316;
+}
+.option-pill:has(#check-speed:checked) .switch-label {
+    color: #9a3412;
+}
+.option-pill:has(#check-speed:checked) .switch-track.speed-track {
+    background: #f97316;
+}
+.option-pill:has(#check-speed:checked) #input-speed {
+    border-color: #fdba74 !important;
+    color: #9a3412 !important;
+}
+.option-pill:has(#check-speed:checked) .speed-unit-label {
+    color: #9a3412 !important;
+}
+
+/* Speed Mode Specific Styles */
+.speed-active-text {
+    color: #c2410c !important; /* Orange-red for speed alert */
+}
+
+#input-speed:focus {
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
 }
 

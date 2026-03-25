@@ -438,7 +438,7 @@
         <nav class="nav-menu">
             <a href="bg-remove.html" class="nav-item">✂️ 배경 제거</a>
             <a href="video-edit.html" class="nav-item active">🎬 동영상 컷편집</a>
-            <a href="#" class="nav-item disabled">⬇️ 유튜브 다운</a>
+            <a href="youtube.html" class="nav-item">⬇️ 유튜브 다운</a>
         </nav>
         <div class="sidebar-footer">
             &copy; 2026 Snap-Task.<br>
@@ -638,6 +638,50 @@
         </div>
     </div>
 
+    <script>
+        const BRIDGE_URL = 'http://localhost:8888';
+        const ffmpegStatus = document.getElementById('ffmpeg-status');
+
+        async function checkBridgeStatus() {
+            try {
+                const res = await fetch(`${BRIDGE_URL}/status`);
+                const data = await res.json();
+                if (data.ffmpeg) {
+                    ffmpegStatus.innerHTML = '<span style="color: #10b981; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-check-circle"></i> Local Engine Ready</span>';
+                    ffmpegStatus.title = "로컬 FFmpeg 감지됨 (고속 모드 준비)";
+                } else {
+                    ffmpegStatus.innerHTML = '<span style="color: #f59e0b; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-exclamation-triangle"></i> Local Setup Needed</span>';
+                }
+            } catch (e) {
+                ffmpegStatus.innerHTML = '<span style="color: #94a3b8; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-network-wired"></i> Web Engine Only</span>';
+                ffmpegStatus.title = "브라우저 엔진(WASM)으로 작동 중";
+            }
+        }
+
+        function showAgentGuide() {
+            if (typeof Swal === 'undefined') {
+                alert('에이전트 실행 방법:\n1. 프로젝트 폴더의 start-agent.bat 실행\n2. 켜진 창을 유지하고 페이지 새로고침');
+                return;
+            }
+            Swal.fire({
+                title: '로컬 엔진 에이전트 안내',
+                html: `
+                    <div style="text-align: left; line-height: 1.6; font-size: 0.9rem;">
+                        현재 브라우저 전용 엔진(WASM)으로 작동 중입니다.<br>
+                        <b>더 빠른 처리 속도</b>를 원하시면 로컬 에이전트를 실행하세요.<br><br>
+                        1. <b>start-agent.bat</b> 파일을 실행하세요.<br>
+                        2. 터미널 창이 뜨면 잠시 후 자동으로 <b>Local Engine Ready</b>로 바뀝니다.
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: '확인',
+                confirmButtonColor: '#3ea6ff'
+            });
+        }
+        
+        setInterval(checkBridgeStatus, 10000);
+        checkBridgeStatus();
+    </script>
     <script src="./video-editor/js/editor.js"></script>
     <script>
         // Sidebar Toggle

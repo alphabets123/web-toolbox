@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="coi-serviceworker.js"></script>
+    <title>유튜브 다운로드 - Snap-Task</title>
+    <!-- 딸깍 파비콘 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.2rem; color: var(--text-color); }
+        .subtitle { color: var(--accent-color); font-weight: 700; margin-bottom: 1.2rem; font-size: 0.95rem; }
+        
+        .downloader-box {
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .bridge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.4rem 1rem;
+            background: #f8fafc;
+            border-radius: 99px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #94a3b8;
+        }
+        .status-dot.online { background-color: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
+        .status-dot.offline { background-color: #ef4444; }
+
+        /* 가로 배치 입력 그룹 */
+        .input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1.2rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid #f1f5f9;
+            font-size: 0.95rem;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.2s;
+            background: #fdfdfd;
+        }
+
+        input[type="text"]:focus {
+            border-color: #ff0000;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.05);
+        }
+
+        .btn-analyze {
+            padding: 0 1.2rem;
+            background: linear-gradient(135deg, #ff0000, #ff4d4d);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-analyze:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+        }
+
+        .btn-analyze:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .preview-card {
+            margin-top: 1.2rem;
+            display: none;
+            animation: slideUp 0.4s ease-out;
+            text-align: left;
+            border-top: 1.5px dashed #f1f5f9;
+            padding-top: 1.2rem;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .preview-card img {
+            width: 100%;
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
+
+        .preview-card h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.4;
+            color: var(--text-color);
+        }
+
+        .progress-area {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.6rem;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: #ff0000;
+            transition: width 0.3s ease;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        #log {
+            margin-top: 1rem;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.7rem;
+            max-height: 100px;
+            overflow-y: auto;
+            text-align: left;
+            display: none;
+        }
+
+        /* 상세 옵션 스타일 */
+        .option-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .format-toggle {
+            display: flex;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 0.6rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .format-toggle button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            background: transparent;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+
+        .format-toggle button.active {
+            background: #ffffff;
+            color: #ff0000;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .res-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .res-chip {
+            padding: 0.35rem 0.8rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .res-chip:hover {
+            border-color: #cbd5e1;
+            background: #e2e8f0;
+        }
+
+        .res-chip.active {
+            background: #ff0000;
+            color: white;
+            border-color: #ff0000;
+            box-shadow: 0 2px 6px rgba(255, 0, 0, 0.2);
+        }
+
+        .res-chip.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: #f8fafc;
+        }
+
+        /* 에이전트 설정 버튼 */
+        .btn-setup {
+            margin-left: 8px;
+            padding: 2px 8px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .btn-setup:hover { background: #cc0000; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1;">
+        <div class="bg-blob"></div>
+        <div class="bg-blob-2"></div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div style="margin-bottom: 2.5rem;">
+            <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
+                </svg>
+                딸깍 작업
+            </div>
+        </div>
+        <nav class="nav-menu">
+            <a href="bg-remove.html" class="nav-item">✂️ 배경 제거</a>
+            <a href="video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
+            <a href="youtube.html" class="nav-item active">⬇️ 유튜브 다운</a>
+        </nav>
+        <div class="sidebar-footer">
+            &copy; 2026 Snap-Task.<br>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header class="top-bar" style="--page-theme-gradient: linear-gradient(135deg, #ff0000, #ff0000, #ff7b00);">
+            <button class="menu-toggle" id="menuToggle">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <span class="top-bar-title">⬇️ 유튜브 다운로드</span>
+        </header>
+
+        <div class="main-content-inner">
+            <div class="content-wrapper">
+                <div class="container" style="text-align: center;">
+                    <h1>유튜브 다운로드</h1>
+                    <p class="subtitle">나만의 광고 없는 고화질 툴박스</p>
+
+                    <div class="downloader-box">
+                        <div class="bridge-status">
+                            <div id="statusDot" class="status-dot"></div>
+                            <span id="statusText">에이전트 연결 확인 중...</span>
+                            <button id="setupBtn" class="btn-setup" style="display:none;" onclick="setupBridge()">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                                초기화/업데이트
+                            </button>
+                        </div>
+
+                        <div id="step1">
+                            <div class="input-row">
+                                <input type="text" id="urlInput" placeholder="유튜브 영상 주소(URL)를 입력하세요">
+                                <button id="analyzeBtn" class="btn-analyze" disabled>분석하기</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Options Selection -->
+                        <div id="step2" class="preview-card">
+                            <div style="display: flex; gap: 1.2rem; flex-wrap: wrap;">
+                                <div style="flex: 1.2; min-width: 260px;">
+                                    <img id="thumbnail" src="" alt="Thumbnail">
+                                    <h3 id="videoTitle">영상 제목</h3>
+                                </div>
+                                <div style="flex: 1; min-width: 240px; text-align: left;">
+                                    <label class="option-label">파일 형식</label>
+                                    <div class="format-toggle">
+                                        <button class="active" onclick="setFormat('mp4', this)">Video (MP4)</button>
+                                        <button onclick="setFormat('mp3', this)">Audio (MP3)</button>
+                                    </div>
+
+                                    <div id="resolutionArea">
+                                        <label class="option-label">해상도 선택</label>
+                                        <div id="resolutionChips" class="res-chips">
+                                            <!-- Resolutions will be injected here -->
+                                        </div>
+                                    </div>
+
+                                    <button id="downloadBtn" class="btn-analyze" style="width: 100%; height: 48px; margin-top: 1.2rem; font-size: 1rem;">다운로드 시작</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Progress -->
+                        <div id="step3" class="progress-area">
+                            <div class="progress-bar-bg">
+                                <div id="progressBar" class="progress-bar-fill"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span id="progressPercent">0%</span>
+                                <span id="downloadInfo">준비 중...</span>
+                            </div>
+                            <div id="log"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">
+                        🔒 모든 다운로드는 본인의 PC에서 직접 처리되어 안전합니다.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const BRIDGE_URL = 'http://localhost:8888';
+        const urlInput = document.getElementById('urlInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+
+        const thumbnail = document.getElementById('thumbnail');
+        const videoTitle = document.getElementById('videoTitle');
+        const resolutionChips = document.getElementById('resolutionChips');
+        const resolutionArea = document.getElementById('resolutionArea');
+        
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const downloadInfo = document.getElementById('downloadInfo');
+        const log = document.getElementById('log');
+
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const setupBtn = document.getElementById('setupBtn');
+
+        let currentFormat = 'mp4';
+        let currentQuality = '1080';
+        let availableResolutions = [];
+
+        // 에이전트 상태와 입력값에 따라 버튼을 업데이트하는 통합 함수
+        function updateAnalyzeButton(isReady) {
+            const url = urlInput.value.trim();
+            const isAnalyzing = analyzeBtn.innerHTML.includes('분석 중...');
+            if (isAnalyzing) return;
+
+            analyzeBtn.onclick = analyzeVideo; // 클릭 이벤트 연결
+
+            if (!isReady) {
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '에이전트 준비 중...';
+                setupBtn.style.display = 'inline-flex';
+            } else {
+                setupBtn.style.display = 'none';
+                analyzeBtn.innerHTML = '분석하기';
+                analyzeBtn.disabled = !url;
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch(`${BRIDGE_URL}/status`);
+                const data = await res.json();
+                
+                const isReady = data.ytdlp && data.ffmpeg;
+                statusDot.className = isReady ? 'status-dot online' : 'status-dot busy';
+                statusText.innerText = isReady ? '에이전트 준비 완료' : '시스템 구성 요소 점검 및 설치 중...';
+                
+                updateAnalyzeButton(isReady);
+            } catch (e) {
+                statusDot.className = 'status-dot offline';
+                statusText.innerHTML = '에이전트 미실행 <span style="text-decoration: underline; cursor: pointer; color: #ffca28; margin-left: 5px;" onclick="showAgentGuide()">[실행 방법]</span>';
+                
+                if (!analyzeBtn.innerHTML.includes('분석 중...')) {
+                    analyzeBtn.disabled = true;
+                    analyzeBtn.innerHTML = '에이전트 연결 대기 중...';
+                    setupBtn.style.display = 'none';
+                }
+            }
+        }
+
+        // 입력창 타이핑 시 실시간 활성화 체크
+        urlInput.addEventListener('input', () => {
+            const isReady = statusDot.classList.contains('online');
+            updateAnalyzeButton(isReady);
+        });
+
+        function showAgentGuide() {
+            Swal.fire({
+                title: 'Snap-Task 에이전트 안내',
+                html: `
+                    <div style="text-align: left; line-height: 1.6; font-size: 0.95rem;">
+                        이 서비스는 고화질 다운로드를 위해 로컬 에이전트가 필요합니다.<br><br>
+                        <b>1. 에이전트 다운로드</b><br>
+                        <a href="https://github.com/사용자계정/프로젝트명/releases/latest/download/yt-agent.exe" 
+                           style="display: inline-block; background: #3ea6ff; color: white; padding: 5px 15px; border-radius: 4px; text-decoration: none; margin: 10px 0;">
+                           yt-agent.exe 받기
+                        </a><br>
+                        
+                        <b>2. 실행</b><br>
+                        다운로드한 <b>yt-agent.exe</b>를 실행하세요. 터미널 창이 뜨면서 에이전트가 시작됩니다.<br><br>
+                        
+                        <b>3. 자동 감지</b><br>
+                        실행 후 잠시만 기다리면 이 웹사이트가 자동으로 <b>'연결됨'</b> 상태로 전환됩니다.<br><br>
+                        
+                        <small style="color: #888;">* 에이전트는 C:\\SnapTask 폴더를 생성하여 관리 도구를 안전하게 보관합니다.</small>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: '확인',
+                confirmButtonColor: '#3ea6ff'
+            });
+        }
+
+        async function setupBridge() {
+            setupBtn.disabled = true;
+            setupBtn.innerHTML = '처리 중...';
+            statusText.innerText = '필수 파일 설치 및 업데이트 중... (약 1분 소요)';
+            
+            try {
+                const res = await fetch(`${BRIDGE_URL}/setup`);
+                const text = await res.text();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '설정 완료',
+                    text: '이제 모든 기능을 안정적으로 사용할 수 있습니다.',
+                    confirmButtonColor: '#ff0000'
+                });
+            } catch (e) {
+                Swal.fire('오류', '에이전트 설정 중 문제가 발생했습니다.', 'error');
+            } finally {
+                setupBtn.disabled = false;
+                setupBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg> 초기화/업데이트';
+                checkStatus();
+            }
+        }
+
+        function enableAnalyzeUI() {
+            analyzeBtn.innerHTML = '분석하기';
+            analyzeBtn.disabled = false;
+            analyzeBtn.onclick = analyzeVideo;
+        }
+
+        async function analyzeVideo() {
+            const url = urlInput.value.trim();
+            if (!url) return Swal.fire('알림', '유튜브 URL을 입력해 주세요.', 'info');
+
+            // 분석 전 상태 초기화
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> 분석 중...';
+
+            // 기존 결과 즉시 숨김 및 초기화
+            step2.style.display = 'none';
+            step3.style.display = 'none';
+            thumbnail.src = ''; // 이미지 초기화
+
+            try {
+                const res = await fetch(`${BRIDGE_URL}/info?url=${encodeURIComponent(url)}`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                // 썸네일 로딩 감지 (캐시 방지 위해 속도보다 정확성 우선)
+                const thumbnailLoaded = new Promise((resolve) => {
+                    thumbnail.onload = resolve;
+                    thumbnail.onerror = resolve;
+                    thumbnail.src = data.thumbnail + (data.thumbnail.includes('?') ? '&' : '?') + 't=' + Date.now();
+                });
+
+                videoTitle.innerText = data.title;
+                availableResolutions = data.resolutions || [];
+                renderResolutions();
+
+                // 이미지가 브라우저에 캐시되었더라도 로딩 프로세스를 명확히 기다림
+                await thumbnailLoaded;
+                
+                // 화면 표시 시작
+                step2.style.display = 'block';
+                
+                // 브라우저 렌더링 루프 동기화 (레이아웃 확정 대기)
+                await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+                
+                // 자연스러운 스크롤
+                step2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // 애니메이션(0.4s) 및 스크롤 안정화 대기 (충분히 긴 1.2초 대기)
+                // 이 시점이 되어야 유저가 화면이 '다 떴다'고 인지함
+                await new Promise(r => setTimeout(r, 1200));
+
+                downloadBtn.onclick = startDownload;
+                
+                // 성공 시에만 여기서 버튼 복구
+                enableAnalyzeUI();
+
+            } catch (e) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '분석 실패',
+                    text: e.message || '영상 정보를 가져오지 못했습니다.',
+                    confirmButtonColor: '#ff0000'
+                });
+                // 에러 시에도 버튼은 다시 활성화
+                enableAnalyzeUI();
+            } finally {
+                // 기존의 무조건적 활성화 로직 제거 (위에서 성공/실패 시 각각 처리)
+                console.log('분석 프로세스 종료');
+            }
+        }
+
+        function setFormat(fmt, btn) {
+            currentFormat = fmt;
+            document.querySelectorAll('.format-toggle button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            if (fmt === 'mp3') {
+                resolutionArea.style.opacity = '0.3';
+                resolutionArea.style.pointerEvents = 'none';
+            } else {
+                resolutionArea.style.opacity = '1';
+                resolutionArea.style.pointerEvents = 'auto';
+            }
+        }
+
+        function renderResolutions() {
+            resolutionChips.innerHTML = '';
+            // 프리셋 해상도들
+            const presets = [2160, 1440, 1080, 720, 480, 360];
+            let defaultSet = false;
+
+            presets.forEach(res => {
+                const isAvailable = availableResolutions.some(r => r >= res);
+                const chip = document.createElement('div');
+                chip.className = `res-chip ${isAvailable ? '' : 'disabled'}`;
+                chip.innerText = res >= 2160 ? '4K' : res + 'p';
+                
+                if (isAvailable) {
+                    chip.onclick = () => {
+                        currentQuality = res;
+                        document.querySelectorAll('.res-chip').forEach(c => c.classList.remove('active'));
+                        chip.classList.add('active');
+                    };
+                    
+                    // 기본값 1080p 시도, 없으면 가능한 최고 화질
+                    if (!defaultSet && (res === 1080 || !presets.includes(1080))) {
+                        chip.click();
+                        defaultSet = true;
+                    }
+                }
+                resolutionChips.appendChild(chip);
+            });
+            
+            if (!defaultSet && availableResolutions.length > 0) {
+                const firstChip = resolutionChips.querySelector('.res-chip:not(.disabled)');
+                if (firstChip) firstChip.click();
+            }
+        }
+
+        function startDownload() {
+            const url = urlInput.value.trim();
+            step2.style.opacity = '0.5';
+            step2.style.pointerEvents = 'none';
+            step3.style.display = 'block';
+            log.style.display = 'block';
+            
+            const query = `url=${encodeURIComponent(url)}&format=${currentFormat}&quality=${currentQuality}`;
+            const eventSource = new EventSource(`${BRIDGE_URL}/download?${query}`);
+
+            eventSource.onmessage = (event) => {
+                const data = event.data;
+                
+                if (data.includes('[DONE]')) {
+                    eventSource.close();
+                    downloadInfo.innerText = '저장 완료!';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '다운로드 완료',
+                        text: '다운로드 폴더에 안전하게 저장되었습니다.',
+                        showCancelButton: true,
+                        confirmButtonText: '폴더 열기',
+                        cancelButtonText: '닫기',
+                        confirmButtonColor: '#3ea6ff'
+                    }).then((result) => {
+                        if (result.isConfirmed) fetch(`${BRIDGE_URL}/open-folder`);
+                        location.reload(); // 초기 상태로 복구
+                    });
+                    return;
+                }
+
+                if (data.includes('[ERROR]')) {
+                    eventSource.close();
+                    Swal.fire('오류 발생', data, 'error').then(() => location.reload());
+                    return;
+                }
+
+                const percentMatch = data.match(/(\d+\.\d+)%/);
+                if (percentMatch) {
+                    const p = percentMatch[1];
+                    progressBar.style.width = p + '%';
+                    progressPercent.innerText = p + '%';
+                    downloadInfo.innerText = '파일 전공 및 변환 중...';
+                }
+
+                const logLine = document.createElement('div');
+                logLine.innerText = data;
+                log.appendChild(logLine);
+                log.scrollTop = log.scrollHeight;
+            };
+
+            eventSource.onerror = () => {
+                eventSource.close();
+                Swal.fire('연결 끊김', '에이전트와의 연결이 끊어졌습니다.', 'error');
+            };
+        }
+
+        // Sidebar logic
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('open');
+                document.getElementById('sidebarOverlay').classList.add('open');
+            } else {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+            }
+        });
+        document.getElementById('sidebarOverlay').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+        });
+
+        setInterval(checkStatus, 5000);
+        checkStatus();
+    </script>
+</body>
+</html>

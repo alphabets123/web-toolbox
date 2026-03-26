@@ -143,7 +143,21 @@ async function checkAndSetupBinaries() {
     console.log('-------------------------------------------------------');
 }
 
+// --- 자동 종료 로직 ---
+let lastRequestTime = Date.now();
+const IDLE_TIMEOUT = 60000; // 1분 (설치 완료 후부터 적용)
+
+function startIdleTimer() {
+    setInterval(() => {
+        if (Date.now() - lastRequestTime > IDLE_TIMEOUT) {
+            console.log('   [Idle] 장시간 요청이 없어 자동 종료합니다.');
+            process.exit(0);
+        }
+    }, 30000);
+}
+
 const server = http.createServer(async (req, res) => {
+    lastRequestTime = Date.now();
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -271,6 +285,8 @@ checkAndSetupBinaries().then(() => {
         console.log(`   접속 주소: http://localhost:${PORT}`);
         console.log('-------------------------------------------------------');
         console.log('   유튜브 다운로드가 완료되면 이 창을 닫으셔도 됩니다.');
+        
+        startIdleTimer(); // 서버가 정상적으로 열린 뒤에 타이머 시작!
     });
 });
 

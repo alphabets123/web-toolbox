@@ -5,7 +5,7 @@
   "main": "bridge.js",
   "scripts": {
     "start": "node bridge.js",
-    "build": "pkg . --targets node18-win-x64 --output yt-agent.exe"
+    "build": "pkg . --targets node18-win-x64 --output ../../dist/yt-agent.exe"
   },
   "pkg": {
     "assets": [],

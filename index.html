@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="coi-serviceworker.js"></script>
+    <script src="web/assets/js/coi-serviceworker.js"></script>
     <title>Snap-Task - 빠르고 단순한 업무 도구</title>
     <!-- 딸깍(위트있는) 파비콘 (🖱️ 마우스) 추가 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="web/assets/css/style.css">
     <style>
         .badge { display: inline-block; padding: 0.4rem 0.8rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 999px; color: var(--accent-color); font-size: 0.8rem; font-weight: 700; margin-bottom: 1.2rem; text-transform: uppercase; }
         h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 0.8rem; color: var(--text-color); line-height: 1.2; }
@@ -41,9 +41,9 @@
             </div>
         </div>
         <nav class="nav-menu">
-            <a href="bg-remove.html" class="nav-item">✂️ 배경 제거</a>
-            <a href="video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
-            <a href="youtube.html" class="nav-item">⬇️ 유튜브 다운</a>
+            <a href="web/pages/bg-remove.html" class="nav-item">✂️ 배경 제거</a>
+            <a href="web/pages/video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
+            <a href="web/pages/youtube.html" class="nav-item">⬇️ 유튜브 다운</a>
         </nav>
         
         <!-- 하단 광고 배너 뷰 -->
@@ -72,20 +72,20 @@
                     <p class="desc">설치나 서버 전송 필요 없이, 내 PC 자체 AI로 <strong>딸깍 한 번에</strong> 마무리하는 필수 도구.</p>
                     
                     <div class="tool-grid">
-                        <a href="bg-remove.html" class="tool-card">
+                        <a href="web/pages/bg-remove.html" class="tool-card">
                             <div class="icon">✂️</div>
                             <h3>배경 제거 (누끼 따기)</h3>
                             <p>이미지 크기 무제한, 무손실 고화질 다운로드. 완벽한 프라이버시.</p>
                             <p style="margin-top: 0.5rem; color: #d946ef; font-weight: 700; font-size: 0.85rem;">💡 인물/사물이 명확한 사진에 최적화</p>
                         </a>
                         
-                        <a href="video-edit.html" class="tool-card">
+                        <a href="web/pages/video-edit.html" class="tool-card">
                             <div class="icon">🎬</div>
                             <h3>동영상 구간 자르기</h3>
                             <p>내장된 WebAssembly 엔진을 통해 브라우저에서 직접 빠른 컷편집.</p>
                         </a>
                         
-                        <a href="youtube.html" class="tool-card">
+                        <a href="web/pages/youtube.html" class="tool-card">
                             <div class="icon">⬇️</div>
                             <h3>유튜브 영상 다운</h3>
                             <p>복잡한 설치나 광고 없이 내 PC 자원을 활용한 안전한 원클릭 다운로드.</p>

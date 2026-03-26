@@ -68,6 +68,6 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
     console.log(`Web Toolbox Server running at http://localhost:${PORT}/`);
-    console.log(`Video Editor accessible at http://localhost:${PORT}/video-editor/`);
+    console.log(`Video Editor accessible at http://localhost:${PORT}/web/pages/video-edit.html`);
     console.log('Press Ctrl+C to stop.');
 });

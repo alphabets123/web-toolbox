@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="coi-serviceworker.js"></script>
+    <script src="../assets/js/coi-serviceworker.js"></script>
     <title>동영상 컷편집 - Snap-Task</title>
     <!-- 딸깍 파비콘 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
     
     <!-- FFmpeg.wasm v0.11.0 (Stable CDN Fail-safe) -->
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
@@ -427,7 +427,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="sidebar" id="sidebar">
         <div style="margin-bottom: 2.5rem;">
-            <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
+            <a href="../../index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
             <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
@@ -682,7 +682,7 @@
         setInterval(checkBridgeStatus, 10000);
         checkBridgeStatus();
     </script>
-    <script src="./video-editor/js/editor.js"></script>
+    <script src="../assets/video-editor/js/editor.js"></script>
     <script>
         // Sidebar Toggle
         document.getElementById('menuToggle').addEventListener('click', function() {

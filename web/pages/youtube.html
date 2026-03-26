@@ -324,7 +324,7 @@
                                         <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 600;">성인 인증이 필요한 영상은 브라우저를 선택하세요.</div>
                                     </div>
                                     <select id="browser_cookies" style="padding: 6px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; font-size: 0.8rem; font-weight: 700; background: white; outline: none;">
-                                        <option value="none">로그인 안 함 (일반)</option>
+                                        <option value="none" selected>로그인 안 함 (일반)</option>
                                         <option value="chrome">Chrome (크롬)</option>
                                         <option value="edge">Edge (엣지)</option>
                                         <option value="whale">Whale (웨일)</option>
@@ -591,15 +591,34 @@
                 enableAnalyzeUI();
 
             } catch (e) {
-                const errorMsg = e.message || '영상 정보를 가져오지 못했습니다.';
-                const details = e.details ? `<br><small style="color: #666; font-size: 0.7rem;">${e.details}</small>` : '';
-                
-                Swal.fire({
-                    icon: 'error',
-                    title: '분석 실패',
-                    html: `${errorMsg}${details}`,
-                    confirmButtonColor: '#ff0000'
-                });
+                if (e.message === '[ERROR_COOKIE_LOCKED]') {
+                    const browser = document.getElementById('browser_cookies').value;
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '브라우저 종료 필요',
+                        html: `
+                            <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
+                                선택하신 <b>${browser === 'whale' ? '웨일' : browser} 브라우저</b>가 현재 실행 중입니다.<br><br>
+                                브라우저가 켜져 있으면 보안을 위해 쿠키 정보를 가져올 수 없습니다.<br><br>
+                                🔔 <b>해결 방법:</b><br>
+                                1. 사용 중인 ${browser === 'whale' ? '웨일' : browser} 창을 <b>모두 닫아주세요.</b><br>
+                                2. 다시 <b>[분석하기]</b> 버튼을 눌러주세요!
+                            </div>
+                        `,
+                        confirmButtonText: '확인 후 브라우저 끄기',
+                        confirmButtonColor: '#ff0000'
+                    });
+                } else {
+                    const errorMsg = e.message || '영상 정보를 가져오지 못했습니다.';
+                    const details = e.details ? `<br><small style="color: #666; font-size: 0.7rem;">${e.details}</small>` : '';
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: '분석 실패',
+                        html: `${errorMsg}${details}`,
+                        confirmButtonColor: '#ff0000'
+                    });
+                }
                 enableAnalyzeUI();
             } finally {
                 // 기존의 무조건적 활성화 로직 제거 (위에서 성공/실패 시 각각 처리)

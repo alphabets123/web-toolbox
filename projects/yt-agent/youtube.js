@@ -279,9 +279,18 @@ const server = http.createServer(async (req, res) => {
             } else {
                 console.log(`\n   [실패] 프로세스 종료 코드: ${code}`);
                 res.writeHead(500);
+                
+                let errorMsg = '분석 엔진 오류';
+                let details = errorOutput.split('\n').filter(l => l.includes('ERROR:')).join('\n') || errorOutput;
+
+                // 쿠키 잠금 에러 감지
+                if (details.includes('Could not copy') && details.includes('cookie database')) {
+                    errorMsg = '[ERROR_COOKIE_LOCKED]';
+                }
+
                 res.end(JSON.stringify({ 
-                    error: '분석 엔진 오류', 
-                    details: errorOutput.split('\n').filter(l => l.includes('ERROR:')).join('\n') || errorOutput 
+                    error: errorMsg, 
+                    details: details 
                 }));
             }
         });

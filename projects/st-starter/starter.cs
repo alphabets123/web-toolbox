@@ -43,6 +43,14 @@ namespace SnapTaskStarter
             Console.WriteLine("   Snap-Task V2 전용 플랫폼 런처");
             Console.WriteLine("==========================================\n");
 
+            // [추가] 중복 실행 방지 체크
+            if (IsAgentRunning())
+            {
+                Console.WriteLine("[INFO] 에이전트가 이미 가동 중입니다. 웹페이지를 이용해 주세요.");
+                System.Threading.Thread.Sleep(1500);
+                return;
+            }
+
             if (!Directory.Exists(BASE_DIR)) Directory.CreateDirectory(BASE_DIR);
             if (!Directory.Exists(RUNTIME_DIR)) Directory.CreateDirectory(RUNTIME_DIR);
             if (!Directory.Exists(APPS_DIR)) Directory.CreateDirectory(APPS_DIR);
@@ -137,6 +145,19 @@ namespace SnapTaskStarter
             } catch (Exception ex) {
                 Console.WriteLine("[Error] 다운로드 실패: " + ex.Message);
                 WaitAndExit(5);
+                return false;
+            }
+        }
+
+        static bool IsAgentRunning()
+        {
+            try {
+                var request = (HttpWebRequest)WebRequest.Create("http://localhost:8888/status");
+                request.Timeout = 1000;
+                using (var response = (HttpWebResponse)request.GetResponse()) {
+                    return response.StatusCode == HttpStatusCode.OK;
+                }
+            } catch {
                 return false;
             }
         }

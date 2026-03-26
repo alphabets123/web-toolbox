@@ -63,13 +63,18 @@ function downloadFile(url, dest) {
                 
                 response.on('data', (chunk) => {
                     downloadedSize += chunk.length;
-                    if (totalSize) {
+                    const mbDownloaded = (downloadedSize / 1024 / 1024).toFixed(1);
+
+                    if (totalSize && totalSize > 0) {
                         const percent = ((downloadedSize / totalSize) * 100).toFixed(1);
                         const barSize = 30;
                         const filledSize = Math.round((downloadedSize / totalSize) * barSize);
                         const emptySize = barSize - filledSize;
                         const bar = '█'.repeat(filledSize) + '░'.repeat(emptySize);
-                        process.stdout.write(`   [${bar}] ${percent}% (${(downloadedSize/1024/1024).toFixed(1)}MB / ${(totalSize/1024/1024).toFixed(1)}MB)\r`);
+                        process.stdout.write(`   [${bar}] ${percent}% (${mbDownloaded}MB / ${(totalSize / 1024 / 1024).toFixed(1)}MB)\r`);
+                    } else {
+                        // 전체 크기 정보가 없을 때의 대체 표시
+                        process.stdout.write(`   [준비 중...] 다운로드 중: ${mbDownloaded}MB 수신됨\r`);
                     }
                 });
 

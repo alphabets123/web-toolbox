@@ -552,7 +552,11 @@
                 const browser = document.getElementById('browser_cookies').value;
                 const res = await fetch(`${BRIDGE_URL}/info?url=${encodeURIComponent(url)}&browser=${browser}`);
                 const data = await res.json();
-                if (data.error) throw new Error(data.error);
+                if (data.error) {
+                    const err = new Error(data.error);
+                    err.details = data.details;
+                    throw err;
+                }
 
                 // 썸네일 로딩 감지 (캐시 방지 위해 속도보다 정확성 우선)
                 const thumbnailLoaded = new Promise((resolve) => {

@@ -259,6 +259,7 @@ const server = http.createServer(async (req, res) => {
         const videoUrl = parsedUrl.searchParams.get('url');
         const format = parsedUrl.searchParams.get('format') || 'mp4';
         const quality = parsedUrl.searchParams.get('quality') || '1080';
+        const browser = parsedUrl.searchParams.get('browser'); // 'chrome', 'edge' 등
 
         res.writeHead(200, { 'Content-Type': 'text/event-stream' });
 
@@ -268,6 +269,11 @@ const server = http.createServer(async (req, res) => {
             '--ffmpeg-location', BIN_DIR,
             '-o', path.join(downloadsPath, '%(title)s.%(ext)s'),
         ];
+
+        // 성인 인증 쿠키 옵션 추가
+        if (browser && browser !== 'none') {
+            args.push('--cookies-from-browser', browser);
+        }
 
         if (format === 'mp3') {
             args.push('-f', 'bestaudio/best', '--extract-audio', '--audio-format', 'mp3');
@@ -280,7 +286,15 @@ const server = http.createServer(async (req, res) => {
         try {
             const ytdlp = spawn(YTDLP_PATH, args);
             ytdlp.stdout.on('data', (data) => { res.write(`data: ${data.toString()}\n\n`); });
-            ytdlp.stderr.on('data', (data) => { res.write(`data: [LOG] ${data.toString()}\n\n`); });
+            ytdlp.stderr.on('data', (data) => { 
+                const msg = data.toString();
+                // 연령 제한 에러 감지
+                if (msg.includes('confirm your age') || msg.includes('age-restricted')) {
+                    res.write(`data: [ERROR_AGE_RESTRICTED] ${msg}\n\n`);
+                } else {
+                    res.write(`data: [LOG] ${msg}\n\n`); 
+                }
+            });
             ytdlp.on('close', (code) => {
                 res.write(`data: [DONE] Exit code ${code}\n\n`);
                 res.end();

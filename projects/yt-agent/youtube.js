@@ -233,12 +233,15 @@ const server = http.createServer(async (req, res) => {
             args.push('--cookies-from-browser', browser);
         }
 
+        console.log(`   [실행] ${YTDLP_PATH} ${args.join(' ')}`);
+
         let ytdlp;
         try {
             activeProcesses.set(processId, true);
             ytdlp = spawn(YTDLP_PATH, args);
         } catch (err) {
             activeProcesses.delete(processId);
+            console.error(`   [오류] 프로세스 실행 실패: ${err.message}`);
             res.writeHead(500);
             return res.end(JSON.stringify({ error: '실행 실패: ' + err.message }));
         }
@@ -246,7 +249,11 @@ const server = http.createServer(async (req, res) => {
         let output = '';
         let errorOutput = '';
         ytdlp.stdout.on('data', (data) => { output += data.toString(); });
-        ytdlp.stderr.on('data', (data) => { errorOutput += data.toString(); }); // 에러 내용 캡처
+        ytdlp.stderr.on('data', (data) => { 
+            const msg = data.toString();
+            errorOutput += msg;
+            process.stdout.write(msg); // 터미널에 실시간 에러 출력
+        });
 
         ytdlp.on('close', (code) => {
             activeProcesses.delete(processId);
@@ -270,8 +277,8 @@ const server = http.createServer(async (req, res) => {
                     res.end(JSON.stringify({ error: '데이터 파싱 실패: ' + e.message }));
                 }
             } else {
+                console.log(`\n   [실패] 프로세스 종료 코드: ${code}`);
                 res.writeHead(500);
-                // 실제 에러 내용을 포함하여 전달
                 res.end(JSON.stringify({ 
                     error: '분석 엔진 오류', 
                     details: errorOutput.split('\n').filter(l => l.includes('ERROR:')).join('\n') || errorOutput 

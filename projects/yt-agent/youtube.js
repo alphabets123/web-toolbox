@@ -170,12 +170,22 @@ let lastRequestTime = Date.now();
 const IDLE_TIMEOUT = 60000; // 1분 (설치 완료 후부터 적용)
 
 function startIdleTimer() {
+    let countdownInterval = null;
+    
     setInterval(() => {
-        if (Date.now() - lastRequestTime > IDLE_TIMEOUT) {
-            console.log('   [Idle] 장시간 요청이 없어 자동 종료합니다.');
+        const idleTime = Date.now() - lastRequestTime;
+        
+        if (idleTime > IDLE_TIMEOUT) {
+            console.log('\n   [Idle] 장시간 요청이 없어 자동 종료합니다.');
             process.exit(0);
-        }
-    }, 30000);
+            if (idleTime > 3000) { // 3초 이상 요청이 없으면
+                const remaining = Math.ceil((IDLE_TIMEOUT - idleTime) / 1000);
+                process.stdout.write(`\r   ⚠️  웹브라우저가 종료되었습니다. ${remaining}초 후 에이전트가 종료됩니다...    `);
+            } else {
+                // 다시 활성화되면 지우기
+                process.stdout.write('\r' + ' '.repeat(70) + '\r');
+            }
+    }, 1000);
 }
 
 const server = http.createServer(async (req, res) => {
@@ -221,6 +231,7 @@ const server = http.createServer(async (req, res) => {
         
         // 성인 인증 쿠키 옵션 추가
         if (browser && browser !== 'none') {
+            console.log(`\n   [안내] 🔞 연령 제한 해제를 위해 ${browser} 브라우저 쿠키를 참조합니다.`);
             args.push('--cookies-from-browser', browser);
         }
 
@@ -280,9 +291,10 @@ const server = http.createServer(async (req, res) => {
 
         // 성인 인증 쿠키 옵션 추가
         if (browser && browser !== 'none') {
+            console.log(`\n   [안내] 🔞 연령 제한 해제를 위해 ${browser} 브라우저 쿠키를 참조합니다.`);
             args.push('--cookies-from-browser', browser);
         }
-
+        
         if (format === 'mp3') {
             args.push('-f', 'bestaudio/best', '--extract-audio', '--audio-format', 'mp3');
         } else {

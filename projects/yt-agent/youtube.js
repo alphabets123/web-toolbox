@@ -178,13 +178,13 @@ function startIdleTimer() {
         if (idleTime > IDLE_TIMEOUT) {
             console.log('\n   [Idle] 장시간 요청이 없어 자동 종료합니다.');
             process.exit(0);
-            if (idleTime > 3000) { // 3초 이상 요청이 없으면
-                const remaining = Math.ceil((IDLE_TIMEOUT - idleTime) / 1000);
-                process.stdout.write(`\r   ⚠️  웹브라우저가 종료되었습니다. ${remaining}초 후 에이전트가 종료됩니다...    `);
-            } else {
-                // 다시 활성화되면 지우기
-                process.stdout.write('\r' + ' '.repeat(70) + '\r');
-            }
+        } else if (idleTime > 3000) { // 3초 이상 요청이 없으면
+            const remaining = Math.ceil((IDLE_TIMEOUT - idleTime) / 1000);
+            process.stdout.write(`\r   ⚠️  웹브라우저가 종료되었습니다. ${remaining}초 후 에이전트가 종료됩니다...    `);
+        } else {
+            // 다시 활성화되면 지우기
+            process.stdout.write('\r' + ' '.repeat(70) + '\r');
+        }
     }, 1000);
 }
 

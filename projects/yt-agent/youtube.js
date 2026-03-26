@@ -244,7 +244,10 @@ const server = http.createServer(async (req, res) => {
         }
 
         let output = '';
+        let errorOutput = '';
         ytdlp.stdout.on('data', (data) => { output += data.toString(); });
+        ytdlp.stderr.on('data', (data) => { errorOutput += data.toString(); }); // 에러 내용 캡처
+
         ytdlp.on('close', (code) => {
             activeProcesses.delete(processId);
             if (code === 0) {
@@ -264,11 +267,15 @@ const server = http.createServer(async (req, res) => {
                     }));
                 } catch (e) {
                     res.writeHead(500);
-                    res.end(JSON.stringify({ error: '데이터 파싱 실패' }));
+                    res.end(JSON.stringify({ error: '데이터 파싱 실패: ' + e.message }));
                 }
             } else {
                 res.writeHead(500);
-                res.end(JSON.stringify({ error: '정보를 가져오지 못했습니다.' }));
+                // 실제 에러 내용을 포함하여 전달
+                res.end(JSON.stringify({ 
+                    error: '분석 엔진 오류', 
+                    details: errorOutput.split('\n').filter(l => l.includes('ERROR:')).join('\n') || errorOutput 
+                }));
             }
         });
     }

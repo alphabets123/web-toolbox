@@ -587,13 +587,15 @@
                 enableAnalyzeUI();
 
             } catch (e) {
+                const errorMsg = e.message || '영상 정보를 가져오지 못했습니다.';
+                const details = e.details ? `<br><small style="color: #666; font-size: 0.7rem;">${e.details}</small>` : '';
+                
                 Swal.fire({
                     icon: 'error',
                     title: '분석 실패',
-                    text: e.message || '영상 정보를 가져오지 못했습니다.',
+                    html: `${errorMsg}${details}`,
                     confirmButtonColor: '#ff0000'
                 });
-                // 에러 시에도 버튼은 다시 활성화
                 enableAnalyzeUI();
             } finally {
                 // 기존의 무조건적 활성화 로직 제거 (위에서 성공/실패 시 각각 처리)

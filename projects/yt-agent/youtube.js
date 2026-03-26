@@ -204,6 +204,8 @@ const server = http.createServer(async (req, res) => {
     }
     else if (pathname === '/info') {
         const videoUrl = parsedUrl.searchParams.get('url');
+        const browser = parsedUrl.searchParams.get('browser'); // 추가
+
         if (!videoUrl) {
             res.writeHead(400);
             return res.end(JSON.stringify({ error: 'URL이 필요합니다.' }));
@@ -216,6 +218,12 @@ const server = http.createServer(async (req, res) => {
         }
 
         const args = ['--dump-json', '--no-playlist', videoUrl];
+        
+        // 성인 인증 쿠키 옵션 추가
+        if (browser && browser !== 'none') {
+            args.push('--cookies-from-browser', browser);
+        }
+
         let ytdlp;
         try {
             activeProcesses.set(processId, true);

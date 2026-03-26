@@ -42,7 +42,6 @@ function downloadFile(url, dest) {
             const protocol = currentUrl.startsWith('https') ? https : http;
             protocol.get(currentUrl, (response) => {
                 if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-                    // 리다이렉트 처리
                     let nextUrl = response.headers.location;
                     if (!nextUrl.startsWith('http')) {
                         const origin = new URL(currentUrl).origin;
@@ -57,9 +56,27 @@ function downloadFile(url, dest) {
                     return;
                 }
 
+                const totalSize = parseInt(response.headers['content-length'], 10);
+                let downloadedSize = 0;
+
                 const file = fs.createWriteStream(dest);
+                
+                response.on('data', (chunk) => {
+                    downloadedSize += chunk.length;
+                    if (totalSize) {
+                        const percent = ((downloadedSize / totalSize) * 100).toFixed(1);
+                        const barSize = 30;
+                        const filledSize = Math.round((downloadedSize / totalSize) * barSize);
+                        const emptySize = barSize - filledSize;
+                        const bar = '█'.repeat(filledSize) + '░'.repeat(emptySize);
+                        process.stdout.write(`   [${bar}] ${percent}% (${(downloadedSize/1024/1024).toFixed(1)}MB / ${(totalSize/1024/1024).toFixed(1)}MB)\r`);
+                    }
+                });
+
                 response.pipe(file);
+                
                 file.on('finish', () => {
+                    if (totalSize) process.stdout.write('\n'); // 완료 후 줄바꿈
                     file.close((err) => {
                         if (err) reject(err);
                         else resolve();

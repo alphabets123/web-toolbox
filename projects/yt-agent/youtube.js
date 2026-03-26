@@ -167,18 +167,16 @@ async function checkAndSetupBinaries() {
 
 // --- 자동 종료 로직 ---
 let lastRequestTime = Date.now();
-const IDLE_TIMEOUT = 60000; // 1분 (설치 완료 후부터 적용)
+const IDLE_TIMEOUT = 30000; // 30초로 단축
 
 function startIdleTimer() {
-    let countdownInterval = null;
-    
     setInterval(() => {
         const idleTime = Date.now() - lastRequestTime;
         
         if (idleTime > IDLE_TIMEOUT) {
             console.log('\n   [Idle] 장시간 요청이 없어 자동 종료합니다.');
             process.exit(0);
-        } else if (idleTime > 3000) { // 3초 이상 요청이 없으면
+        } else if (idleTime > 10000) { // 10초 이상 요청이 없을 때만 안내 시작
             const remaining = Math.ceil((IDLE_TIMEOUT - idleTime) / 1000);
             process.stdout.write(`\r   ⚠️  웹브라우저가 종료되었습니다. ${remaining}초 후 에이전트가 종료됩니다...    `);
         } else {

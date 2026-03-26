@@ -415,6 +415,7 @@
 
         let currentFormat = 'mp4';
         let currentQuality = '1080';
+        let currentUrl = ''; // 현재 분석된 URL 저장용
         let availableResolutions = [];
 
         // 에이전트 상태와 입력값에 따라 버튼을 업데이트하는 통합 함수
@@ -547,6 +548,7 @@
         async function analyzeVideo() {
             const url = urlInput.value.trim();
             if (!url) return Swal.fire('알림', '유튜브 URL을 입력해 주세요.', 'info');
+            currentUrl = url; // 전역 변수에 저장
 
             // 1. UI 및 상태 초기화
             analyzeBtn.disabled = true;
@@ -718,7 +720,7 @@
         function startDownload() {
             const browser = document.getElementById('browser_cookies').value;
             
-            const query = `url=${encodeURIComponent(url)}&format=${currentFormat}&quality=${currentQuality}&browser=${browser}`;
+            const query = `url=${encodeURIComponent(currentUrl)}&format=${currentFormat}&quality=${currentQuality}&browser=${browser}`;
             const eventSource = new EventSource(`${BRIDGE_URL}/download?${query}`);
 
             eventSource.onmessage = (event) => {

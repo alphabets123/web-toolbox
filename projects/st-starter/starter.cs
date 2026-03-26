@@ -43,11 +43,30 @@ namespace SnapTaskStarter
             Console.WriteLine("   Snap-Task V2 전용 플랫폼 런처");
             Console.WriteLine("==========================================\n");
 
-            RegisterProtocol();
-
             if (!Directory.Exists(BASE_DIR)) Directory.CreateDirectory(BASE_DIR);
             if (!Directory.Exists(RUNTIME_DIR)) Directory.CreateDirectory(RUNTIME_DIR);
             if (!Directory.Exists(APPS_DIR)) Directory.CreateDirectory(APPS_DIR);
+
+            // [추가] 자기 복제 및 상주 경로 등록 로직
+            string currentExe = Process.GetCurrentProcess().MainModule.FileName;
+            string permanentPath = Path.Combine(BASE_DIR, "st-starter.exe");
+
+            if (currentExe.ToLower() != permanentPath.ToLower())
+            {
+                Console.WriteLine("[!] 시스템에 상주 설치를 진행합니다...");
+                try {
+                    File.Copy(currentExe, permanentPath, true);
+                    Console.WriteLine("[OK] 'C:\\SnapTask' 폴더에 복사되었습니다.");
+                    RegisterProtocol(permanentPath); // 고정된 경로로 등록
+                } catch (Exception ex) {
+                    Console.WriteLine("[Warn] 상주 설치 실패 (권한 문제일 수 있음): " + ex.Message);
+                    RegisterProtocol(currentExe); // 실패 시 현재 경로라도 등록
+                }
+            }
+            else
+            {
+                RegisterProtocol(currentExe); // 이미 상주 경로인 경우
+            }
 
             string targetApp = "youtube";
             if (args.Length > 0)
@@ -122,10 +141,9 @@ namespace SnapTaskStarter
             }
         }
 
-        static void RegisterProtocol()
+        static void RegisterProtocol(string exePath)
         {
             try {
-                string currentExe = Process.GetCurrentProcess().MainModule.FileName;
                 using (RegistryKey classesKey = Registry.CurrentUser.OpenSubKey(@"Software\Classes", true))
                 {
                     using (RegistryKey key = classesKey.CreateSubKey(PROTOCOL))
@@ -134,10 +152,11 @@ namespace SnapTaskStarter
                         key.SetValue("URL Protocol", "");
                         using (RegistryKey shell = key.CreateSubKey(@"shell\open\command"))
                         {
-                            shell.SetValue("", "\"" + currentExe + "\" \"%1\"");
+                            shell.SetValue("", "\"" + exePath + "\" \"%1\"");
                         }
                     }
                 }
+                Console.WriteLine("[OK] 시스템 가동 프로토콜 등록 완료.");
             } catch { }
         }
 

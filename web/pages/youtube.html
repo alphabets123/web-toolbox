@@ -548,14 +548,19 @@
             const url = urlInput.value.trim();
             if (!url) return Swal.fire('알림', '유튜브 URL을 입력해 주세요.', 'info');
 
-            // 1. 상태 및 UI 초기화 (새로운 분석 시작 시)
+            // 1. UI 및 상태 초기화
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 분석 중...';
+            
             const guideArea = document.getElementById('cookie_guide_area');
-            const isGuideShowing = guideArea.style.display === 'block';
+            const isGuideVisible = guideArea.style.display === 'block';
 
-            // 가이드가 안 보이는 상태(최초 클릭)라면 무조건 일반 모드로 시도
+            // 가이드가 안 보이는 상태라면 무조건 일반 모드로 시도하고 기존 결과 숨김
             let browser = document.getElementById('browser_cookies').value;
-            if (!isGuideShowing) {
+            if (!isGuideVisible) {
                 browser = 'none';
+                step2.style.display = 'none';
+                step3.style.display = 'none';
             }
 
             try {

@@ -327,7 +327,9 @@
                                         <option value="none">로그인 안 함 (일반)</option>
                                         <option value="chrome">Chrome (크롬)</option>
                                         <option value="edge">Edge (엣지)</option>
+                                        <option value="whale">Whale (웨일)</option>
                                         <option value="brave">Brave (브레이브)</option>
+                                        <option value="firefox">Firefox (파이어폭스)</option>
                                     </select>
                                 </div>
                             </div>
@@ -733,8 +735,26 @@
             document.getElementById('sidebarOverlay').classList.remove('open');
         });
 
+        function autoDetectBrowser() {
+            const ua = navigator.userAgent.toLowerCase();
+            const select = document.getElementById('browser_cookies');
+            
+            if (ua.includes('whale')) {
+                select.value = 'whale';
+            } else if (ua.includes('edg/')) {
+                select.value = 'edge';
+            } else if (ua.includes('brave')) {
+                select.value = 'brave';
+            } else if (ua.includes('chrome') && !ua.includes('edg/') && !ua.includes('whale')) {
+                select.value = 'chrome';
+            } else if (ua.includes('firefox')) {
+                select.value = 'firefox';
+            }
+        }
+
         setInterval(checkStatus, 5000);
         checkStatus();
+        autoDetectBrowser(); // 페이지 로드 시 실행
     </script>
 </body>
 </html>

@@ -333,10 +333,19 @@
                                         <button onclick="setFormat('mp3', this)">Audio (MP3)</button>
                                     </div>
 
-                                    <div id="resolutionArea">
-                                        <label class="option-label">해상도 선택</label>
-                                        <div id="resolutionChips" class="res-chips">
-                                            <!-- Resolutions will be injected here -->
+                                        </div>
+                                    </div>
+
+                                    <div id="cookieArea" style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #f1f5f9;">
+                                        <label class="option-label">🔞 성인 인증 / 연령 제한 지원</label>
+                                        <select id="browser_cookies" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; font-weight: 700;">
+                                            <option value="none">사용 안 함 (기본)</option>
+                                            <option value="chrome">Chrome (크롬) 쿠키 공유</option>
+                                            <option value="edge">Edge (엣지) 쿠키 공유</option>
+                                            <option value="brave">Brave (브레이브) 쿠키 공유</option>
+                                        </select>
+                                        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 5px; font-weight: 600;">
+                                            * 해당 브라우저에서 유튜브 로그인 및 성인 인증이 되어 있어야 합니다.
                                         </div>
                                     </div>
 
@@ -635,13 +644,9 @@
         }
 
         function startDownload() {
-            const url = urlInput.value.trim();
-            step2.style.opacity = '0.5';
-            step2.style.pointerEvents = 'none';
-            step3.style.display = 'block';
-            log.style.display = 'block';
+            const browser = document.getElementById('browser_cookies').value;
             
-            const query = `url=${encodeURIComponent(url)}&format=${currentFormat}&quality=${currentQuality}`;
+            const query = `url=${encodeURIComponent(url)}&format=${currentFormat}&quality=${currentQuality}&browser=${browser}`;
             const eventSource = new EventSource(`${BRIDGE_URL}/download?${query}`);
 
             eventSource.onmessage = (event) => {
@@ -663,6 +668,26 @@
                         if (result.isConfirmed) fetch(`${BRIDGE_URL}/open-folder`);
                         location.reload(); // 초기 상태로 복구
                     });
+                    return;
+                }
+
+                if (data.includes('[ERROR_AGE_RESTRICTED]')) {
+                    eventSource.close();
+                    statusText.innerText = '성인 인증 필요';
+                    Swal.fire({
+                        title: '연령 제한 확인됨',
+                        html: `
+                            <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
+                                이 영상은 성인 인증이 필요하여 현재 상태로는 받을 수 없습니다.<br><br>
+                                <b>해결 방법:</b><br>
+                                1. 브라우저(크롬/엣지 등)에서 유튜브에 로그인합니다.<br>
+                                2. 성인 인증 절차를 완료합니다.<br>
+                                3. 현재 페이지 설정에서 해당 브라우저(Chrome/Edge 등)를 선택하고 다시 시도하세요!
+                            </div>
+                        `,
+                        icon: 'warning',
+                        confirmButtonText: '확인'
+                    }).then(() => location.reload());
                     return;
                 }
 

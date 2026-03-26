@@ -407,7 +407,6 @@
 
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
-        const setupBtn = document.getElementById('setupBtn');
 
         let currentFormat = 'mp4';
         let currentQuality = '1080';
@@ -605,10 +604,13 @@
 
                 downloadBtn.onclick = startDownload;
                 
-                // 성공 시에만 여기서 버튼 복구
+                // 성공 시에도 혹시 모를 로딩 상태를 위해 버튼 복구
                 enableAnalyzeUI();
 
             } catch (e) {
+                // 분석 실패 시 입력창 다시 활성화
+                enableAnalyzeUI();
+
                 if (e.message === '[ERROR_AGE_RESTRICTED]') {
                     const guideArea = document.getElementById('cookie_guide_area');
                     guideArea.style.display = 'block'; // 가이드 노출
@@ -624,30 +626,53 @@
                         html: `
                             <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
                                 이 영상은 <b>연령 제한(성인 인증)</b>이 필요합니다.<br><br>
-                                아래에 새로 생긴 옵션에서 인증된 브라우저(추천: <b>${detectedBrowser === 'none' ? '엣지 등' : detectedBrowser}</b>)를 선택한 후 다시 시도해 주세요!<br><br>
-                                💡 <b>팁:</b> 현재 브라우저가 잠겨 있다면 다른 브라우저를 활용하는 것이 더 빠릅니다.
+                                아래에 새로 생긴 옵션에서 인증된 브라우저를 선택한 후 다시 시도해 주세요!<br><br>
+                                💡 <b>팁:</b> 현재 <b>${detectedBrowser === 'none' ? '사용 중인' : detectedBrowser}</b> 브라우저가 잠겨 있다면 다른 브라우저를 활용하는 것이 더 빠릅니다.
                             </div>
                         `,
-                        confirmButtonText: '확인',
-                        confirmButtonColor: '#f59e0b'
+                        showCancelButton: true,
+                        confirmButtonText: '감지된 브라우저로 재시도',
+                        cancelButtonText: '직접 선택할게요',
+                        confirmButtonColor: '#f59e0b',
+                        cancelButtonColor: '#94a3b8'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // 감지된 브라우저가 있다면 그것으로, 아니면 현재 선택된 값으로 재시도
+                            if (detectedBrowser !== 'none') {
+                                document.getElementById('browser_cookies').value = detectedBrowser;
+                            }
+                            analyzeVideo();
+                        }
                     });
                 } else if (e.message === '[ERROR_COOKIE_LOCKED]') {
                     document.getElementById('cookie_guide_area').style.display = 'block'; // 가이드 노출
                     const browser = document.getElementById('browser_cookies').value;
-                    const altBrowser = browser === 'chrome' ? 'Edge' : 'Chrome';
+                    const altBrowser = browser === 'chrome' ? 'edge' : 'chrome';
                     
                     Swal.fire({
                         icon: 'warning',
                         title: '브라우저 잠금 확인',
                         html: `
                             <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
-                                선택하신 <b>${browser === 'whale' ? '웨일' : browser} 브라우저</b>가 현재 사용 중이라 쿠키를 읽을 수 없습니다.<br><br>
+                                선택하신 <b>${browser} 브라우저</b>가 현재 사용 중이라 쿠키를 읽을 수 없습니다.<br><br>
                                 💡 <b>추천 방법:</b> 현재 브라우저를 끄는 대신, <b>다른 브라우저(${altBrowser} 등)</b>에서 성인 인증 후 해당 브라우저를 선택해 보세요!<br><br>
                                 ⚠️ <b>현재 브라우저 사용 시:</b> 작업 내용을 저장하고 <b>창을 모두 닫은 후</b> 다시 시도해 주세요.
                             </div>
                         `,
-                        confirmButtonText: '확인',
-                        confirmButtonColor: '#3ea6ff'
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: `${altBrowser}로 바꿔서 재시도`,
+                        denyButtonText: '브라우저 닫고 재시도',
+                        cancelButtonText: '취소',
+                        confirmButtonColor: '#3ea6ff',
+                        denyButtonColor: '#64748b'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            document.getElementById('browser_cookies').value = altBrowser;
+                            analyzeVideo();
+                        } else if (result.isDenied) {
+                            analyzeVideo();
+                        }
                     });
                 } else {
                     const errorMsg = e.message || '영상 정보를 가져오지 못했습니다.';
@@ -717,6 +742,14 @@
 
         function startDownload() {
             const browser = document.getElementById('browser_cookies').value;
+            
+            // UI 초기화: 진행 상태창과 로그창을 보여줍니다.
+            step3.style.display = 'block';
+            log.style.display = 'block';
+            log.innerHTML = ''; // 이전 로그 초기화
+            progressBar.style.width = '0%';
+            progressPercent.innerText = '0%';
+            downloadInfo.innerText = '다운로드 준비 중...';
             
             const query = `url=${encodeURIComponent(currentUrl)}&format=${currentFormat}&quality=${currentQuality}&browser=${browser}`;
             const eventSource = new EventSource(`${BRIDGE_URL}/download?${query}`);

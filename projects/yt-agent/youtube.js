@@ -167,7 +167,7 @@ async function checkAndSetupBinaries() {
 
 // --- 자동 종료 로직 ---
 let lastRequestTime = Date.now();
-const IDLE_TIMEOUT = 30000; // 30초로 단축
+const IDLE_TIMEOUT = 60000; // 60초로 연장 (안정성 확보)
 
 function startIdleTimer() {
     setInterval(() => {
@@ -176,11 +176,11 @@ function startIdleTimer() {
         if (idleTime > IDLE_TIMEOUT) {
             console.log('\n   [Idle] 장시간 요청이 없어 자동 종료합니다.');
             process.exit(0);
-        } else if (idleTime > 10000) { // 10초 이상 요청이 없을 때만 안내 시작
+        } else if (idleTime > IDLE_TIMEOUT - 20000) { // 종료 20초 전부터 안내 시작
             const remaining = Math.ceil((IDLE_TIMEOUT - idleTime) / 1000);
             process.stdout.write(`\r   ⚠️  웹브라우저가 종료되었습니다. ${remaining}초 후 에이전트가 종료됩니다...    `);
         } else {
-            // 다시 활성화되면 지우기
+            // 활성 상태일 때는 안내 지우기
             process.stdout.write('\r' + ' '.repeat(70) + '\r');
         }
     }, 1000);
@@ -209,6 +209,16 @@ const server = http.createServer(async (req, res) => {
         };
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(status));
+    }
+    else if (pathname === '/setup') {
+        console.log('\n   [요청] 시스템 구성 요소 수동 점검/');
+        checkAndSetupBinaries().then(() => {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        }).catch(err => {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: err.message }));
+        });
     }
     else if (pathname === '/info') {
         const videoUrl = parsedUrl.searchParams.get('url');

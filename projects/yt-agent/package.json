@@ -2,9 +2,9 @@
   "name": "snap-task-agent",
   "version": "1.0.0",
   "description": "Snap-Task YouTube Downloader Local Agent",
-  "main": "bridge.js",
+  "main": "youtube.js",
   "scripts": {
-    "start": "node bridge.js",
+    "start": "node youtube.js",
     "build": "pkg . --targets node18-win-x64 --output ../../dist/yt-agent.exe"
   },
   "pkg": {

@@ -13,7 +13,7 @@ echo.
 echo  에이전트를 시작하는 중입니다...
 echo.
 
-node bridge.js
+node projects/yt-agent/youtube.js
 
 if %errorlevel% neq 0 (
     echo.

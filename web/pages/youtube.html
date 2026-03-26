@@ -791,21 +791,17 @@
             document.getElementById('sidebarOverlay').classList.remove('open');
         });
 
+        let detectedBrowser = 'none'; // 자동 감지된 브라우저 저장용
+
         function autoDetectBrowser() {
             const ua = navigator.userAgent.toLowerCase();
-            const select = document.getElementById('browser_cookies');
+            if (ua.includes('whale')) detectedBrowser = 'whale';
+            else if (ua.includes('edg/')) detectedBrowser = 'edge';
+            else if (ua.includes('brave')) detectedBrowser = 'brave';
+            else if (ua.includes('chrome')) detectedBrowser = 'chrome';
+            else if (ua.includes('firefox')) detectedBrowser = 'firefox';
             
-            if (ua.includes('whale')) {
-                select.value = 'whale';
-            } else if (ua.includes('edg/')) {
-                select.value = 'edge';
-            } else if (ua.includes('brave')) {
-                select.value = 'brave';
-            } else if (ua.includes('chrome') && !ua.includes('edg/') && !ua.includes('whale')) {
-                select.value = 'chrome';
-            } else if (ua.includes('firefox')) {
-                select.value = 'firefox';
-            }
+            console.log('감지된 브라우저:', detectedBrowser);
         }
 
         setInterval(checkStatus, 5000);

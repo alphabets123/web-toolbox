@@ -283,8 +283,12 @@ const server = http.createServer(async (req, res) => {
                 let errorMsg = '분석 엔진 오류';
                 let details = errorOutput.split('\n').filter(l => l.includes('ERROR:')).join('\n') || errorOutput;
 
+                // 연령 제한 에러 감지
+                if (details.includes('confirm your age') || details.includes('age-restricted')) {
+                    errorMsg = '[ERROR_AGE_RESTRICTED]';
+                }
                 // 쿠키 잠금 에러 감지
-                if (details.includes('Could not copy') && details.includes('cookie database')) {
+                else if (details.includes('Could not copy') && details.includes('cookie database')) {
                     errorMsg = '[ERROR_COOKIE_LOCKED]';
                 }
 

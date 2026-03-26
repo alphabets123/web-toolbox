@@ -597,15 +597,22 @@
 
             } catch (e) {
                 if (e.message === '[ERROR_AGE_RESTRICTED]') {
-                    document.getElementById('cookie_guide_area').style.display = 'block'; // 가이드 노출
+                    const guideArea = document.getElementById('cookie_guide_area');
+                    guideArea.style.display = 'block'; // 가이드 노출
+                    
+                    // 감지된 브라우저가 있다면 자동으로 해당 브라우저를 선택해줌
+                    if (detectedBrowser !== 'none') {
+                        document.getElementById('browser_cookies').value = detectedBrowser;
+                    }
+                    
                     Swal.fire({
                         icon: 'info',
                         title: '연령 제한 감지',
                         html: `
                             <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
                                 이 영상은 <b>연령 제한(성인 인증)</b>이 필요합니다.<br><br>
-                                아래에 새로 생긴 <b>브라우저 선택</b> 옵션에서 인증된 브라우저를 선택한 후 다시 시도해 주세요!<br><br>
-                                💡 <b>꿀팁:</b> 현재 사용 중인 브라우저 대신 <b>다른 브라우저(Edge 등)</b>를 선택하면 더 안전하고 빠르게 처리됩니다.
+                                아래에 새로 생긴 옵션에서 인증된 브라우저(추천: <b>${detectedBrowser === 'none' ? '엣지 등' : detectedBrowser}</b>)를 선택한 후 다시 시도해 주세요!<br><br>
+                                💡 <b>팁:</b> 현재 브라우저가 잠겨 있다면 다른 브라우저를 활용하는 것이 더 빠릅니다.
                             </div>
                         `,
                         confirmButtonText: '확인',

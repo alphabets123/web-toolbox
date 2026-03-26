@@ -257,7 +257,34 @@
 
         .btn-setup:hover { background: #cc0000; }
         .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .btn-launch {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.5rem 1.2rem;
+            background: linear-gradient(135deg, #ff0000, #ff4040);
+            color: white;
+            border: none;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+            animation: pulse-red 2s infinite;
+        }
+
+        .btn-launch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 0, 0, 0.3);
+            background: linear-gradient(135deg, #ff1a1a, #ff5c5c);
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
     </style>
 </head>
 <body>
@@ -450,15 +477,30 @@
                 // 설치 여부에 따라 문구 변경 (localStorage 활용)
                 const isInstalled = localStorage.getItem('snaptask_installed');
                 if (isInstalled) {
-                    statusText.innerHTML = '에이전트 꺼짐 <span style="text-decoration: underline; cursor: pointer; color: #ff0000; margin-left: 5px; font-weight: 800;" onclick="launchAgent()">[가동하기]</span>';
+                    statusText.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="color: #64748b;">에이전트 꺼짐</span>
+                            <button class="btn-launch" onclick="launchAgent()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                엔진 가동하기
+                            </button>
+                        </div>
+                    `;
                 } else {
-                    statusText.innerHTML = '에이전트 미설치 <span style="text-decoration: underline; cursor: pointer; color: #ff0000; margin-left: 5px; font-weight: 800;" onclick="showAgentGuide()">[설치 및 실행 방법]</span>';
+                    statusText.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="color: #64748b;">에이전트 미설치</span>
+                            <button class="btn-launch" style="background: linear-gradient(135deg, #3b82f6, #60a5fa); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); animation: none;" onclick="showAgentGuide()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                스타터 설치 안내
+                            </button>
+                        </div>
+                    `;
                 }
                 
                 if (!analyzeBtn.innerHTML.includes('분석 중...')) {
                     analyzeBtn.disabled = true;
                     analyzeBtn.innerHTML = '에이전트 연결 대기 중...';
-                    setupBtn.style.display = 'none';
                 }
             }
         }

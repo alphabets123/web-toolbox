@@ -455,7 +455,7 @@
             <span class="top-bar-title">🎬 동영상 컷편집</span>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <span id="ffmpeg-status" style="color: #cbd5e1;">FFmpeg Loading...</span>
+                    <span id="engine-status-text" style="color: #cbd5e1; font-weight: 800; font-size: 0.75rem;">Loading Engine...</span>
                     <a id="btn-troubleshoot" href="#" style="display: none; color: #ef4444; font-size: 0.75rem; font-weight: 800; text-decoration: underline;">[진단]</a>
                 </div>
             </div>
@@ -630,6 +630,12 @@
                 </div>
                 <div id="progress-text" style="font-weight: 800; color: var(--accent-color);">준비 중...</div>
                 <div id="time-feedback" style="font-size: 0.75rem; color: #64748b; margin-top: 5px; font-weight: 500;"></div>
+                
+                <!-- FFmpeg Real-time Log Area -->
+                <div id="log-view-container" style="margin-top: 15px; text-align: left; background: #0f172a; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.65rem; color: #94a3b8; height: 100px; overflow-y: auto; border: 1px solid #1e293b;">
+                    <div style="color: #6366f1; font-weight: 800; margin-bottom: 4px; border-bottom: 1px solid #1e293b; padding-bottom: 2px;">FFmpeg Status Log</div>
+                    <div id="ffmpeg-log-view">작업을 기다리는 중...</div>
+                </div>
             </div>
             <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
                 <button id="btn-download-app" class="btn-action primary" style="display: none;">PC 전용 프로그램 받기</button>
@@ -638,51 +644,8 @@
         </div>
     </div>
 
-    <script>
-        const BRIDGE_URL = 'http://localhost:8888';
-        const ffmpegStatus = document.getElementById('ffmpeg-status');
-
-        async function checkBridgeStatus() {
-            try {
-                const res = await fetch(`${BRIDGE_URL}/status`);
-                const data = await res.json();
-                if (data.ffmpeg) {
-                    ffmpegStatus.innerHTML = '<span style="color: #10b981; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-check-circle"></i> Local Engine Ready</span>';
-                    ffmpegStatus.title = "로컬 FFmpeg 감지됨 (고속 모드 준비)";
-                } else {
-                    ffmpegStatus.innerHTML = '<span style="color: #f59e0b; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-exclamation-triangle"></i> Local Setup Needed</span>';
-                }
-            } catch (e) {
-                ffmpegStatus.innerHTML = '<span style="color: #94a3b8; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-network-wired"></i> Web Engine Only</span>';
-                ffmpegStatus.title = "브라우저 엔진(WASM)으로 작동 중";
-            }
-        }
-
-        function showAgentGuide() {
-            if (typeof Swal === 'undefined') {
-                alert('에이전트 실행 방법:\n1. 프로젝트 폴더의 start-agent.bat 실행\n2. 켜진 창을 유지하고 페이지 새로고침');
-                return;
-            }
-            Swal.fire({
-                title: '로컬 엔진 에이전트 안내',
-                html: `
-                    <div style="text-align: left; line-height: 1.6; font-size: 0.9rem;">
-                        현재 브라우저 전용 엔진(WASM)으로 작동 중입니다.<br>
-                        <b>더 빠른 처리 속도</b>를 원하시면 로컬 에이전트를 실행하세요.<br><br>
-                        1. <b>start-agent.bat</b> 파일을 실행하세요.<br>
-                        2. 터미널 창이 뜨면 잠시 후 자동으로 <b>Local Engine Ready</b>로 바뀝니다.
-                    </div>
-                `,
-                icon: 'info',
-                confirmButtonText: '확인',
-                confirmButtonColor: '#3ea6ff'
-            });
-        }
-        
-        setInterval(checkBridgeStatus, 10000);
-        checkBridgeStatus();
-    </script>
-    <script src="../assets/video-editor/js/editor.js"></script>
+    <!-- Core Logic (video-edit.js now handles Engine status unity) -->
+    <script src="../assets/js/video-edit.js?v2.4.1"></script>
     <script>
         // Sidebar Toggle
         document.getElementById('menuToggle').addEventListener('click', function() {

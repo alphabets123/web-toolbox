@@ -1,12 +1,33 @@
 /* editor.js */
 document.addEventListener('DOMContentLoaded', () => {
     const { createFFmpeg, fetchFile } = FFmpeg;
+    const logView = document.getElementById('ffmpeg-log-view');
+    
+    // External function to add logs safely
+    function appendLog(msg, isHeader = false) {
+        if (!logView) return;
+        const line = document.createElement('div');
+        if (isHeader) line.style.color = '#818cf8';
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logView.appendChild(line);
+        if (logView.parentNode) {
+            logView.parentNode.scrollTop = logView.parentNode.scrollHeight;
+        }
+        while (logView.children.length > 100) {
+            logView.removeChild(logView.firstChild);
+        }
+    }
+
     const ffmpeg = createFFmpeg({
         log: true,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+        logger: ({ message }) => {
+            appendLog(message);
+        }
     });
     
-    const ffmpegStatus = document.getElementById('ffmpeg-status');
+    const engineStatus = document.getElementById('engine-status-text');
+    const BRIDGE_URL = 'http://localhost:8888';
     const videoUpload = document.getElementById('video-upload');
 
     const mediaLibrary = document.getElementById('media-library');
@@ -23,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const timelineList = document.getElementById('timeline-list');
     const clipDurationText = document.getElementById('clip-duration');
     const btnExport = document.getElementById('btn-export');
+    btnExport.disabled = true; // Initially disabled until FFmpeg is ready
     const btnTroubleshoot = document.getElementById('btn-troubleshoot');
 
     const modal = document.getElementById('render-modal');
@@ -90,45 +112,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Initialization ---
     const loadFFmpeg = async () => {
+        engineStatus.textContent = "Loading Web Engine...";
+        engineStatus.style.color = "#a1a1aa";
+        
         const timeout = setTimeout(() => {
-            if (!ffmpeg.loaded) {
-                ffmpegStatus.textContent = "Loading Timeout (Check Connection)";
-                ffmpegStatus.style.color = "#f59e0b";
+            if (!ffmpeg.isLoaded()) {
+                engineStatus.textContent = "Loading Timeout (Check Connection)";
+                engineStatus.style.color = "#f59e0b";
                 showToast("FFmpeg 로딩이 지연되고 있습니다. 인터넷 연결을 확인하세요.");
             }
         }, 15000);
 
         try {
-            // Check for Secure Context
             if (!window.isSecureContext) {
-                console.warn("Not in a Secure Context. FFmpeg.wasm will likely fail.");
-                ffmpegStatus.textContent = "HTTPS Required";
-                ffmpegStatus.style.color = "#ef4444";
-                showToast("보안 연결(HTTPS)이 필요합니다.");
-            }
-
-            // Check for SharedArrayBuffer
-            if (typeof SharedArrayBuffer === 'undefined') {
-                console.warn("SharedArrayBuffer is NOT available.");
-                ffmpegStatus.textContent = "System Incompatible";
-                ffmpegStatus.style.color = "#ef4444";
-                // Don't return yet, try to load anyway in case of polyfills
+                engineStatus.textContent = "HTTPS Required";
+                return;
             }
 
             await ffmpeg.load();
             clearTimeout(timeout);
-            ffmpeg.loaded = true;
-            ffmpegStatus.textContent = "FFmpeg Ready";
-            ffmpegStatus.style.color = "#4caf50";
+            engineStatus.textContent = "Web Engine Ready";
+            engineStatus.style.color = "#4caf50";
+            updateExportState();
             btnTroubleshoot.style.display = 'none';
+            
+            // Start Bride/Local Engine Check
+            setInterval(checkBridgeStatus, 10000);
+            checkBridgeStatus();
         } catch (err) {
             clearTimeout(timeout);
             console.error("FFmpeg load failed:", err);
-            ffmpegStatus.textContent = "FFmpeg Load Error";
-            ffmpegStatus.style.color = "#ef4444";
+            engineStatus.textContent = "FFmpeg Load Error";
+            engineStatus.style.color = "#ef4444";
             btnTroubleshoot.style.display = 'inline';
         }
     };
+
+    async function checkBridgeStatus() {
+        try {
+            const res = await fetch(`${BRIDGE_URL}/status`);
+            const data = await res.json();
+            if (data.ffmpeg) {
+                engineStatus.innerHTML = '<span style="color: #10b981; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-check-circle"></i> Local Engine Ready</span>';
+                engineStatus.title = "로컬 FFmpeg 감지됨 (고속 모드 준비)";
+            } else {
+                // If web engine is ready, we stay in Web Engine mode but show hint
+                if (ffmpeg.isLoaded()) {
+                    engineStatus.innerHTML = '<span style="color: #4caf50; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-microchip"></i> Web Engine Ready</span>';
+                    engineStatus.title = "브라우저 엔진(WASM)으로 작동 중";
+                }
+            }
+        } catch (e) {
+            if (ffmpeg.isLoaded()) {
+                engineStatus.innerHTML = '<span style="color: #4caf50; cursor: pointer;" onclick="showAgentGuide()"><i class="fas fa-microchip"></i> Web Engine Ready</span>';
+                engineStatus.title = "브라우저 엔진(WASM)으로 작동 중";
+            }
+        }
+    }
+
+    window.showAgentGuide = () => {
+        Swal.fire({
+            title: '엔진 상태 안내',
+            html: `
+                <div style="text-align: left; line-height: 1.6; font-size: 0.9rem;">
+                    현재 <b>브라우저 엔진(Web Engine)</b>으로 작동 중입니다.<br>
+                    더 빠른 대용량 파일 처리를 원하시면 로컬 에이전트를 실행하세요.<br><br>
+                    1. <b>start-agent.bat</b> 파일을 실행하세요.<br>
+                    2. 실행 즉시 <b>Local Engine Ready</b>로 전환됩니다.
+                </div>
+            `,
+            icon: 'info',
+            confirmButtonText: '확인',
+            confirmButtonColor: '#3ea6ff'
+        });
+    }
 
     // Diagnostic Alert
     btnTroubleshoot.addEventListener('click', (e) => {
@@ -311,16 +368,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function updateExportState() {
-        btnExport.disabled = timelineSegments.length === 0 || !importedSources.length;
+        // Only enable if FFmpeg is loaded AND we have segments
+        const isReady = ffmpeg.isLoaded() && timelineSegments.length > 0 && importedSources.length > 0;
+        btnExport.disabled = !isReady;
         document.getElementById('segment-count').textContent = timelineSegments.length;
         btnAddSegment.disabled = timelineSegments.length >= MAX_CLIPS && !editingSegmentId;
     }
 
     // --- Media Library ---
     async function remuxForPreview(file) {
-        if (!ffmpeg.loaded) {
-            showToast("FFmpeg가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.", "warning");
-            return null;
+        // Wait for FFmpeg to load (max 30s) instead of immediately failing
+        if (!ffmpeg.isLoaded()) {
+            showToast("FFmpeg 엔진 로딩 대기 중... 잠시만 기다려주세요.", "info");
+            let waited = 0;
+            while (!ffmpeg.isLoaded() && waited < 30000) {
+                await new Promise(r => setTimeout(r, 500));
+                waited += 500;
+            }
+            if (!ffmpeg.isLoaded()) {
+                showToast("FFmpeg 엔진 로딩에 실패했습니다. 페이지를 새로고침해주세요.", "error");
+                return null;
+            }
         }
 
         const ext = file.name.split('.').pop().toLowerCase();
@@ -345,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await ffmpeg.run('-i', inputName, '-c', 'copy', '-movflags', '+faststart', outputName);
             
             const outData = await ffmpeg.FS('readFile', outputName);
-            const blob = new Blob([outData.buffer], { type: 'video/mp4' });
+            const blob = new Blob([new Uint8Array(outData)], { type: 'video/mp4' });
             const previewUrl = URL.createObjectURL(blob);
 
             // Cleanup FS immediately to save memory
@@ -360,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Fallback: Safe Remux (Low res, ultrafast encoding for preview only)
                 await ffmpeg.run('-i', inputName, '-vf', 'scale=-2:480', '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-movflags', '+faststart', outputName);
                 const outData = await ffmpeg.FS('readFile', outputName);
-                const blob = new Blob([outData.buffer], { type: 'video/mp4' });
+                const blob = new Blob([new Uint8Array(outData)], { type: 'video/mp4' });
                 const previewUrl = URL.createObjectURL(blob);
                 
                 await ffmpeg.FS('unlink', inputName);
@@ -733,11 +801,15 @@ document.addEventListener('DOMContentLoaded', () => {
         endInputs.hh.value = Math.floor(t/3600).toString().padStart(2, '0');
         endInputs.mm.value = Math.floor((t%3600)/60).toString().padStart(2, '0');
         endInputs.ss.value = Math.floor(t%60).toString().padStart(2, '0');
-        calculateClipDuration();
+            calculateClipDuration();
     });
 
     // --- Export ---
     btnExport.addEventListener('click', async () => {
+        if (!ffmpeg.isLoaded()) {
+            showToast("FFmpeg 로딩 중입니다. 잠시만 기다려 주세요.", "warning");
+            return;
+        }
         if (timelineSegments.length === 0) { // Assuming timelineSegments is the correct array for cut segments
             showToast("먼저 편집할 구간을 추가해주세요.", "warning");
             return;
@@ -769,6 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnClose.textContent = '작업 중단(취소)'; // Change button text during work
         isExporting = true; 
         timeFeedback.textContent = '00:00:00';
+        if (logView) logView.innerHTML = '<div>작업 시작...</div>';
 
         const startTime = Date.now();
         let seconds = 0;
@@ -788,23 +861,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const src = importedSources[0];
+            const total = timelineSegments.length;
             if (!src) throw new Error("편집할 원본 영상이 로드되지 않았습니다.");
 
-            console.log("Export started for:", src.name);
-            progressText.textContent = '원본 파일 로드 중... (잠시만 기다려주세요)';
+            appendLog(`처리 시작: ${src.name} (${total} 클립)`, true);
+            appendLog(`시스템 정보: SharedArrayBuffer=${typeof SharedArrayBuffer !== 'undefined'}, CrossOriginIsolated=${window.crossOriginIsolated}`);
+            
+            // Clean up any stale files from previous runs
+            const existingFiles = ffmpeg.FS('readdir', '/');
+            for (const f of existingFiles) {
+                if (f.endsWith('.mp4') || f === 'list.txt') {
+                    try { ffmpeg.FS('unlink', f); appendLog(`[정리] 이전 파일 삭제: ${f}`); } catch(e) {}
+                }
+            }
+            
+            progressText.textContent = '원본 파일 로드 중...';
+            appendLog("가상 파일 시스템으로 원본 복사 중...");
+            
+            // Track last FFmpeg log message for debugging
+            let lastFFmpegMsg = '';
+            ffmpeg.setLogger(({ type, message }) => {
+                lastFFmpegMsg = message;
+                appendLog(message);
+            });
             
             const fileData = await fetchFile(src.file);
-            console.log("File fetched successfully. Size:", fileData.byteLength);
+            appendLog(`fetchFile 완료: ${fileData.byteLength} bytes`);
             
             await ffmpeg.FS('writeFile', 'input.mp4', fileData);
-            console.log("Input file written to FFmpeg virtual FS.");
+            
+            // Verify source file write
+            const srcStat = await ffmpeg.FS('stat', 'input.mp4');
+            appendLog(`입력 파일 준비 완료 (${(srcStat.size/1024/1024).toFixed(1)}MB)`);
             
             let listContent = '';
-            const total = timelineSegments.length;
-            const originalName = src.name.substring(0, src.name.lastIndexOf('.')) || src.name;
-
             const speed = checkSpeed.checked ? (parseFloat(inputSpeed.value) || 1.0) : 1.0;
             const speedPrefix = speed !== 1.0 ? `[x${speed.toFixed(1)}]` : "";
+            
+            // Sanitize filename: remove characters that break OS/Browser downloads
+            const sanitize = (name) => name.replace(/[\\/:*?"<>|＂｜＂]/g, '_').replace(/\s+/g, ' ').trim();
+            const originalName = sanitize(src.name.substring(0, src.name.lastIndexOf('.')) || src.name);
             const finalFilename = `${speedPrefix}[cut]${originalName}.mp4`;
             
             // Helper for atempo filter chaining
@@ -829,13 +925,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressText.textContent = `클립 ${i+1} 작업 중... (${basePercent.toFixed(1)}%)`;
                 // Real-time timer handled by setInterval
 
+                appendLog(`[클립 ${i+1}/${total}] 처리 중 (구간: ${seg.startTime}s ~ ${seg.endTime}s)`);
                 if (speed !== 1.0) {
-                    // Safe Input Seeking: -ss/ -t before -i ensures PTS starts at 0
+                    // Precision re-encode with speed
                     const args = [
                         '-y',
+                        '-i', 'input.mp4',
                         '-ss', seg.startTime.toString(),
                         '-t', dur.toString(),
-                        '-i', 'input.mp4',
                         '-vf', `setpts=1/${speed}*PTS`,
                         '-af', audioFilter,
                         '-c:v', 'libx264',
@@ -844,20 +941,51 @@ document.addEventListener('DOMContentLoaded', () => {
                         '-movflags', '+faststart',
                         partName
                     ];
-                    console.log("Processing SPEED export:", speed, "Args:", args.join(' '));
                     await ffmpeg.run(...args);
                 } else if (currentMode === 'precision') {
                     // Precision Mode: Re-encode
                     await ffmpeg.run('-ss', seg.startTime.toString(), '-i', 'input.mp4', '-t', dur.toString(), '-vcodec', 'libx264', '-preset', 'ultrafast', '-acodec', 'aac', '-map_metadata', '0', '-movflags', '+faststart', partName);
+                    
+                    // ★ Fallback: If precision mode produced 0-byte file (e.g. AV1 codec not supported)
+                    // automatically retry with fast mode (stream copy - no decoding needed)
+                    let precisionOk = false;
+                    try {
+                        const pStat = await ffmpeg.FS('stat', partName);
+                        precisionOk = pStat.size > 100;
+                    } catch(e) { precisionOk = false; }
+                    
+                    if (!precisionOk) {
+                        appendLog(`[자동전환] 정밀모드 실패 (코덱 미지원 가능성). 고속모드로 재시도합니다...`, true);
+                        try { await ffmpeg.FS('unlink', partName); } catch(e) {}
+                        await ffmpeg.run('-ss', seg.startTime.toString(), '-i', 'input.mp4', '-t', dur.toString(), '-c', 'copy', '-avoid_negative_ts', 'make_zero', '-map_metadata', '0', '-movflags', '+faststart', partName);
+                    }
                 } else {
-                    // Fast Mode: Stream Copy
+                    // Fast Mode: Stream Copy (works with ALL codecs including AV1)
                     await ffmpeg.run('-ss', seg.startTime.toString(), '-i', 'input.mp4', '-t', dur.toString(), '-c', 'copy', '-avoid_negative_ts', 'make_zero', '-map_metadata', '0', '-movflags', '+faststart', partName);
+                }
+                
+                // [Verification] Check if part file was actually created and is not empty
+                try {
+                    const stats = await ffmpeg.FS('stat', partName);
+                    if (stats.size < 1000) { // Less than 1KB is likely an error
+                         appendLog(`[경고] 클립 ${i+1} 파일 크기가 매우 작습니다 (${stats.size} bytes)`, true);
+                    } else {
+                         appendLog(`[클립 ${i+1}] 생성 완료 (${(stats.size/1024).toFixed(1)}KB)`);
+                    }
+                } catch (e) {
+                    appendLog(`[오류] 클립 ${i+1} 파일 생성 실패. 마지막 FFmpeg 메시지: ${lastFFmpegMsg}`, true);
+                    // List all files in FS for debugging
+                    try {
+                        const allFiles = ffmpeg.FS('readdir', '/');
+                        appendLog(`[디버그] FS 파일 목록: ${allFiles.filter(f => f !== '.' && f !== '..').join(', ')}`);
+                    } catch(ex) {}
+                    throw new Error(`클립 ${i+1} 생성 실패: FFmpeg 처리가 중단되었거나 파일이 비어있습니다. (${lastFFmpegMsg})`);
                 }
                 
                 if (isSeparate) {
                     // Download immediately if separate export is on
                     const data = await ffmpeg.FS('readFile', partName);
-                    const blob = new Blob([data.buffer], { type: 'video/mp4' });
+                    const blob = new Blob([new Uint8Array(data)], { type: 'video/mp4' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -874,12 +1002,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!isSeparate) {
-                await ffmpeg.FS('writeFile', 'list.txt', listContent);
-                console.log("Concat list created:\n", listContent);
-                
-                progressText.textContent = '클립들을 하나로 합치는 중...';
-                await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', '-avoid_negative_ts', 'make_zero', '-map_metadata', '0', '-movflags', '+faststart', 'out.mp4');
-                console.log("Merging completed.");
+                // If only one segment, just rename part0.mp4 to out.mp4
+                if (total === 1) {
+                    progressText.textContent = '최종 파일 준비 중...';
+                    appendLog("단일 클립: 결과물로 변환 중...");
+                    await ffmpeg.FS('rename', 'part0.mp4', 'out.mp4');
+                } else {
+                    await ffmpeg.FS('writeFile', 'list.txt', listContent);
+                    appendLog("병합 리스트 작성 완료");
+                    
+                    progressText.textContent = '클립들을 하나로 합치는 중...';
+                    appendLog("병합 시작 (concat)...");
+                    // Remove -map_metadata 0 from concat as it often causes stream mismatch errors in WASM
+                    await ffmpeg.run('-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', '-avoid_negative_ts', 'make_zero', '-movflags', '+faststart', 'out.mp4');
+                }
+
+                // [Verification] Check if out.mp4 exists before reading
+                try {
+                    const stats = await ffmpeg.FS('stat', 'out.mp4');
+                    appendLog(`최종 병합 완료 (${(stats.size/1024/1024).toFixed(2)}MB)`, true);
+                } catch (e) {
+                    const files = await ffmpeg.FS('readdir', '/');
+                    appendLog(`[오류] 최종 파일 누락. 현재 파일 목록: ${files.join(', ')}`, true);
+                    throw new Error('최종 병합 파일(out.mp4) 생성 실패: 파일 형식이 호환되지 않거나 예기치 않은 오류가 발생했습니다.');
+                }
                 
                 progressBar.style.width = '100%';
                 if (modalTimer) clearInterval(modalTimer);
@@ -890,13 +1036,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 timeFeedback.textContent = `총 작업 완료! (소요 시간: ${finalTime})`;
                 
                 const data = await ffmpeg.FS('readFile', 'out.mp4');
-                const blob = new Blob([data.buffer], { type: 'video/mp4' });
+                console.log('[DOWNLOAD DEBUG] readFile data length:', data.length, 'buffer type:', data.buffer.constructor.name);
+                
+                // CRITICAL: Must copy from SharedArrayBuffer to regular ArrayBuffer
+                const copied = new Uint8Array(data);
+                console.log('[DOWNLOAD DEBUG] copied length:', copied.length, 'buffer type:', copied.buffer.constructor.name);
+                
+                const blob = new Blob([copied], { type: 'video/mp4' });
+                console.log('[DOWNLOAD DEBUG] blob size:', blob.size);
+                
                 const url = URL.createObjectURL(blob);
                 
                 const a = document.createElement('a'); 
                 a.href = url; 
-                a.download = finalFilename; 
+                a.download = finalFilename;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
 
                 modalTitle.textContent = '완료!';
                 modalMessage.textContent = '편집된 비디오가 성공적으로 생성되었습니다.';
@@ -925,9 +1082,18 @@ document.addEventListener('DOMContentLoaded', () => {
             progressText.textContent = '중단됨';
             Swal.fire({
                 title: '편집 오류',
-                text: `${err.message} (1GB 미만의 파일인지, 다른 프로그램에서 사용 중인지 확인해 주세요.)`,
+                text: `${err.message}`,
                 icon: 'error',
-                confirmButtonText: '확인'
+                footer: '<button id="btn-copy-log" style="background:#f1f5f9; border:1px solid #cbd5e1; padding:5px 10px; border-radius:4px; font-size:0.75rem; cursor:pointer;">실패 로그 복사하기</button>',
+                confirmButtonText: '확인',
+                didOpen: () => {
+                    document.getElementById('btn-copy-log').onclick = () => {
+                        const logs = logView ? logView.innerText : "로그를 찾을 수 없습니다.";
+                        navigator.clipboard.writeText(logs).then(() => {
+                            showToast("로그가 클립보드에 복사되었습니다.", "success");
+                        });
+                    };
+                }
             });
         } finally {
             isExporting = false; 

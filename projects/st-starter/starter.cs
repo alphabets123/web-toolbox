@@ -109,7 +109,8 @@ namespace SnapTaskStarter
             string appPath = Path.Combine(APPS_DIR, info.SourceFile);
 
             Console.WriteLine(string.Format("[!] '{0}' 코드를 업데이트 중...", targetApp));
-            if (!DownloadFile(info.Url, appPath)) return;
+            string cacheBreakerUrl = info.Url + "?t=" + DateTime.Now.Ticks.ToString();
+            if (!DownloadFile(cacheBreakerUrl, appPath)) return;
 
             // 3. 실행 (백그라운드 비가시 모드)
             Console.WriteLine(string.Format("[INFO] {0} 가동 중 (백그라운드)...", targetApp));

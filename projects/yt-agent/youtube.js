@@ -1,3 +1,4 @@
+const VERSION = 'v20260327-020';
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -18,17 +19,17 @@ const FFMPEG_PATH = path.join(BIN_DIR, 'ffmpeg.exe');
 if (!fs.existsSync(SNAP_TASK_DIR)) fs.mkdirSync(SNAP_TASK_DIR, { recursive: true });
 if (!fs.existsSync(BIN_DIR)) fs.mkdirSync(BIN_DIR, { recursive: true });
 
-let isDownloading = false;
-let activeProcesses = new Map();
 
 function getDownloadsFolder() {
+    const start = Date.now();
     try {
         const cmd = `powershell -command "(Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders').'{374DE290-123F-4565-9164-39C4925E467B}'"`;
         const pathStr = execSync(cmd).toString().trim();
         const expandedPath = pathStr.replace(/%([^%]+)%/g, (_, n) => process.env[n] || _);
+        console.log(`   [Folder] 다운로드 폴더 확인 완료 (${Date.now() - start}ms): ${expandedPath}`);
         if (fs.existsSync(expandedPath)) return expandedPath;
     } catch (e) {
-        console.error('Download folder lookup failed:', e.message);
+        console.error('   [!] 다운로드 폴더 조회 실패:', e.message);
     }
     return path.join(process.env.USERPROFILE, 'Downloads');
 }
@@ -97,9 +98,11 @@ function downloadFile(url, dest) {
 }
 
 async function checkAndSetupBinaries() {
-    console.log('\n\n\n'); // 약간의 여백
+    process.stdout.write('\x1Bc'); // 터미널 화면 초기화 (깔끔한 시작)
+    console.log('\n');
     console.log('=======================================================');
-    console.log('   Snap-Task 로컬 에이전트 - 시스템 점검 중...');
+    console.log(`   Snap-Task 로컬 에이전트 [${VERSION}]`);
+    console.log('   시스템 점검 중...');
     console.log('-------------------------------------------------------');
     
     // 1. 핵심 엔진 점검 (yt-dlp)
@@ -114,7 +117,8 @@ async function checkAndSetupBinaries() {
             console.log('   [오류] 엔진 설치 실패: ' + e.message);
         }
     } else {
-        console.log('   [OK] 핵심 엔진이 준비되어 있습니다.');
+        const ytdlpVersion = execSync(`"${YTDLP_PATH}" --version`).toString().trim();
+        console.log(`   [OK] 핵심 엔진이 준비되어 있습니다. (${ytdlpVersion})`);
     }
 
     // 2. 고화질 처리 도구 점검 (FFmpeg)
@@ -186,14 +190,39 @@ function startIdleTimer() {
     }, 1000);
 }
 
+function isBrowserRunning(browserName) {
+    if (!browserName || browserName === 'none') return false;
+    try {
+        const processMap = {
+            'chrome': 'chrome.exe',
+            'whale': 'whale.exe',
+            'edge': 'msedge.exe',
+            'brave': 'brave.exe',
+            'firefox': 'firefox.exe'
+        };
+        const proc = processMap[browserName.toLowerCase()];
+        if (!proc) return false;
+        const output = execSync(`tasklist /FI "IMAGENAME eq ${proc}" /NH`, { stdio: ['pipe', 'pipe', 'ignore'] }).toString();
+        return output.includes(proc);
+    } catch (e) {
+        return false;
+    }
+}
+
 const server = http.createServer(async (req, res) => {
+    const now = new Date().toLocaleTimeString();
+    if (!req.url.startsWith('/status')) {
+        console.log(`\n[${now}] 수신된 요청: ${req.method} ${req.url}`);
+    }
+    
     lastRequestTime = Date.now();
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Last-Event-ID, Cache-Control');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 사전 검사 결과 24시간 캐시
 
     if (req.method === 'OPTIONS') {
-        res.writeHead(204);
+        res.writeHead(200); // 204보다 200이 더 확실한 경우가 있음
         res.end();
         return;
     }
@@ -229,17 +258,20 @@ const server = http.createServer(async (req, res) => {
             return res.end(JSON.stringify({ error: 'URL이 필요합니다.' }));
         }
 
-        const processId = 'info_' + videoUrl;
-        if (activeProcesses.has(processId)) {
-            res.writeHead(429);
-            return res.end(JSON.stringify({ error: '이미 분석 중인 영상입니다.' }));
-        }
+        // Removed activeProcesses check for /info, as per instruction to remove the variable.
 
         const args = ['--dump-json', '--no-playlist', videoUrl];
         
         // 성인 인증 쿠키 옵션 추가
         if (browser && browser !== 'none') {
-            console.log(`\n   [안내] 🔞 연령 제한 해제를 위해 ${browser} 브라우저 쿠키를 참조합니다.`);
+            const isRunning = isBrowserRunning(browser);
+            if (isRunning) {
+                console.log(`\n   [⚠️ 경고] ${browser} 브라우저가 실행 중입니다.`);
+                console.log('   [!] 브라우저가 켜져 있으면 쿠키 파일이 잠겨 있어 접근에 실패할 확률이 높습니다.');
+                console.log('   [팁] 가급적 해당 브라우저의 모든 창을 닫고 다시 시도해 주세요.');
+            } else {
+                console.log(`\n   [안내] 🔞 연령 제한 해제를 위해 ${browser} 브라우저 쿠키를 참조합니다.`);
+            }
             args.push('--cookies-from-browser', browser);
         }
 
@@ -247,10 +279,8 @@ const server = http.createServer(async (req, res) => {
 
         let ytdlp;
         try {
-            activeProcesses.set(processId, true);
             ytdlp = spawn(YTDLP_PATH, args);
         } catch (err) {
-            activeProcesses.delete(processId);
             console.error(`   [오류] 프로세스 실행 실패: ${err.message}`);
             res.writeHead(500);
             return res.end(JSON.stringify({ error: '실행 실패: ' + err.message }));
@@ -266,7 +296,6 @@ const server = http.createServer(async (req, res) => {
         });
 
         ytdlp.on('close', (code) => {
-            activeProcesses.delete(processId);
             if (code === 0) {
                 try {
                     const info = JSON.parse(output);
@@ -297,9 +326,11 @@ const server = http.createServer(async (req, res) => {
                 if (details.includes('confirm your age') || details.includes('age-restricted')) {
                     errorMsg = '[ERROR_AGE_RESTRICTED]';
                 }
-                // 쿠키 잠금 에러 감지
+                // 쿠키 잠금 에러 감지 (브라우저가 열려 있을 때)
                 else if (details.includes('Could not copy') && details.includes('cookie database')) {
                     errorMsg = '[ERROR_COOKIE_LOCKED]';
+                    console.log('\n   [!] 브라우저가 열려 있어 쿠키를 읽을 수 없습니다.');
+                    console.log('   [팁] 크롬/웨일의 모든 창을 닫고, 작업 관리자에서 해당 프로세스를 종료 후 다시 시도해 주세요.');
                 }
 
                 res.end(JSON.stringify({ 
@@ -310,12 +341,30 @@ const server = http.createServer(async (req, res) => {
         });
     }
     else if (pathname === '/download') {
-        const videoUrl = parsedUrl.searchParams.get('url');
+        const url = parsedUrl.searchParams.get('url');
         const format = parsedUrl.searchParams.get('format') || 'mp4';
         const quality = parsedUrl.searchParams.get('quality') || '1080';
-        const browser = parsedUrl.searchParams.get('browser'); // 'chrome', 'edge' 등
+        const browser = parsedUrl.searchParams.get('browser');
 
-        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        console.log(`\n   [다운로드 요청] URL: ${url}`);
+        console.log(`   [옵션] 형식: ${format}, 화질: ${quality}, 쿠키: ${browser}`);
+
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no' // Nginx 등에서 버퍼링 방지
+        });
+
+        // 즉시 첫 번째 데이터를 보내 연결이 수립됨을 알림
+        res.write('data: [SSE_INIT] 연결이 수립되었습니다.\n\n');
+
+        // 연결 유지(Ping) 타이머 추가 (15초 주기)
+        const pingInterval = setInterval(() => {
+            if (!res.writableEnded) {
+                res.write('data: [PING] ' + Date.now() + '\n\n');
+            }
+        }, 15000);
 
         const downloadsPath = getDownloadsFolder();
         let args = [
@@ -326,7 +375,12 @@ const server = http.createServer(async (req, res) => {
 
         // 성인 인증 쿠키 옵션 추가
         if (browser && browser !== 'none') {
-            console.log(`\n   [안내] 🔞 연령 제한 해제를 위해 ${browser} 브라우저 쿠키를 참조합니다.`);
+            const isRunning = isBrowserRunning(browser);
+            if (isRunning) {
+                console.log(`\n   [⚠️ 경고] ${browser} 브라우저가 실행 중입니다 (잠금 가능성 높음).`);
+            } else {
+                console.log(`\n   [안내] 🔞 연령 제한 해제를 위해 ${browser} 브라우저 쿠키를 참조합니다.`);
+            }
             args.push('--cookies-from-browser', browser);
         }
         
@@ -336,7 +390,10 @@ const server = http.createServer(async (req, res) => {
             args.push('-f', `bestvideo[height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${quality}][ext=mp4]/best`);
             args.push('--merge-output-format', 'mp4');
         }
-        args.push(videoUrl);
+        args.push(url);
+
+        console.log(`   [준비] 저장 경로: ${downloadsPath}`);
+        console.log(`   [실행] ${YTDLP_PATH} ${args.join(' ')}`);
 
         try {
             const ytdlp = spawn(YTDLP_PATH, args);
@@ -346,18 +403,66 @@ const server = http.createServer(async (req, res) => {
                 // 연령 제한 에러 감지
                 if (msg.includes('confirm your age') || msg.includes('age-restricted')) {
                     res.write(`data: [ERROR_AGE_RESTRICTED] ${msg}\n\n`);
-                } else {
+                } 
+                // 쿠키 잠금 에러 감지
+                else if (msg.includes('Could not copy') && msg.includes('cookie database')) {
+                    res.write(`data: [ERROR_COOKIE_LOCKED] ${msg}\n\n`);
+                    console.log('\n   [!] 브라우저가 열려 있어 쿠키를 읽을 수 없습니다.');
+                    console.log('   [팁] 크롬/웨일의 모든 창을 닫고, 작업 관리자에서 해당 프로세스를 종료 후 다시 시도해 주세요.');
+                }
+                else {
                     res.write(`data: [LOG] ${msg}\n\n`); 
                 }
             });
             ytdlp.on('close', (code) => {
-                res.write(`data: [DONE] Exit code ${code}\n\n`);
+                clearInterval(pingInterval); // 타이머 제거
+                if (code !== 0) {
+                    res.write(`data: [ERROR] 다운로드 프로세스가 오류와 함께 종료되었습니다. (코드 ${code})\n\n`);
+                } else {
+                    res.write(`data: [DONE] Exit code ${code}\n\n`);
+                }
                 res.end();
             });
+
+            // 클라이언트 연결 종료 감지 (창 닫기, 새로고침 등)
+            req.on('close', () => {
+                clearInterval(pingInterval);
+                if (ytdlp && !ytdlp.killed) {
+                    console.log(`\n   [정리] 클라이언트 연결 끊김으로 프로세스 종료 (PID: ${ytdlp.pid})`);
+                    ytdlp.kill();
+                }
+            });
         } catch (err) {
+            if (typeof pingInterval !== 'undefined') clearInterval(pingInterval);
+            console.error('   [다운로드 실패]', err.message);
             res.write(`data: [ERROR] ${err.message}\n\n`);
             res.end();
         }
+    }
+    else if (pathname === '/check-browser') {
+        const browser = parsedUrl.searchParams.get('browser');
+        const isRunning = isBrowserRunning(browser);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ running: isRunning }));
+    }
+    else if (pathname === '/reopen-browser') {
+        const browser = parsedUrl.searchParams.get('browser');
+        const url = parsedUrl.searchParams.get('url');
+        
+        const processMap = {
+            'chrome': 'chrome',
+            'whale': 'whale',
+            'edge': 'msedge',
+            'brave': 'brave',
+            'firefox': 'firefox'
+        };
+        const cmd = processMap[browser?.toLowerCase()] || 'start';
+        
+        console.log(`\n   [재실행] ${browser} 브라우저로 다시 엽니다.`);
+        exec(`start ${cmd} "${url}"`);
+        
+        res.writeHead(200);
+        res.end('ok');
     }
     else if (pathname === '/open-folder') {
         exec(`explorer "${getDownloadsFolder()}"`);
@@ -372,7 +477,7 @@ const server = http.createServer(async (req, res) => {
 
 checkAndSetupBinaries().then(() => {
     server.listen(PORT, () => {
-        console.log('   Snap-Task 로컬 에이전트 실행 중...');
+        console.log(`   Snap-Task 로컬 에이전트 [${VERSION}] 실행 중...`);
         console.log(`   접속 주소: http://localhost:${PORT}`);
         console.log('-------------------------------------------------------');
         console.log('   유튜브 다운로드가 완료되면 이 창을 닫으셔도 됩니다.');
@@ -382,5 +487,6 @@ checkAndSetupBinaries().then(() => {
 });
 
 process.on('uncaughtException', (err) => {
-    console.error('[오류 발생]', err.message);
+    const now = new Date().toLocaleTimeString();
+    console.error(`\n[${now}] [치명적 오류 발생]`, err.stack || err.message);
 });

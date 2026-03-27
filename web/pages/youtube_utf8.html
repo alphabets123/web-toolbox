@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="../assets/js/coi-serviceworker.js"></script>
-    <title>유튜브 다운로드 - Snap-Task</title>
-    <!-- 딸깍 파비콘 -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
+    <title>?좏뒠釉??ㅼ슫濡쒕뱶 - Snap-Task</title>
+    <!-- ?멸퉵 ?뚮퉬肄?-->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>?뼮截?/text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
@@ -44,7 +44,7 @@
         .status-dot.online { background-color: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
         .status-dot.offline { background-color: #ef4444; }
 
-        /* 가로 배치 입력 그룹 */
+        /* 媛濡?諛곗튂 ?낅젰 洹몃９ */
         .input-row {
             display: flex;
             gap: 8px;
@@ -165,7 +165,7 @@
             display: none;
         }
 
-        /* 상세 옵션 스타일 */
+        /* ?곸꽭 ?듭뀡 ?ㅽ???*/
         .option-label {
             display: block;
             font-size: 0.75rem;
@@ -239,7 +239,7 @@
             background: #f8fafc;
         }
 
-        /* 에이전트 설정 버튼 */
+        /* ?먯씠?꾪듃 ?ㅼ젙 踰꾪듉 */
         .btn-setup {
             margin-left: 8px;
             padding: 2px 8px;
@@ -300,13 +300,13 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
                 </svg>
-                딸깍 작업
+                ?멸퉵 ?묒뾽
             </div>
         </div>
         <nav class="nav-menu">
-            <a href="bg-remove.html" class="nav-item">✂️ 배경 제거</a>
-            <a href="video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
-            <a href="youtube.html" class="nav-item active">⬇️ 유튜브 다운</a>
+            <a href="bg-remove.html" class="nav-item">?귨툘 諛곌꼍 ?쒓굅</a>
+            <a href="video-edit.html" class="nav-item">?렗 ?숈쁺??而룻렪吏?/a>
+            <a href="youtube.html" class="nav-item active">燧뉛툘 ?좏뒠釉??ㅼ슫</a>
         </nav>
         <div class="sidebar-footer">
             &copy; 2026 Snap-Task.<br>
@@ -320,62 +320,64 @@
                     <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
             </button>
-            <span class="top-bar-title">⬇️ 유튜브 다운로드</span>
+            <span class="top-bar-title">燧뉛툘 ?좏뒠釉??ㅼ슫濡쒕뱶</span>
         </header>
 
         <div class="main-content-inner">
             <div class="content-wrapper">
                 <div class="container" style="text-align: center;">
-                    <h1>유튜브 다운로드</h1>
-                    <p class="subtitle">PC에서만 동작하며 에이전트 다운 및 실행이 필요합니다</p>
+                    <h1>?좏뒠釉??ㅼ슫濡쒕뱶</h1>
+                    <p class="subtitle">PC?먯꽌留??숈옉?섎ŉ ?먯씠?꾪듃 ?ㅼ슫 諛??ㅽ뻾???꾩슂?⑸땲??/p>
 
                     <div class="downloader-box">
                         <div class="bridge-status">
                             <div id="statusDot" class="status-dot"></div>
-                            <span id="statusText">에이전트 연결 확인 중...</span>
+                            <span id="statusText">?먯씠?꾪듃 ?곌껐 ?뺤씤 以?..</span>
                         </div>
+
                         <div id="step1">
                             <div class="input-row">
-                                <input type="text" id="urlInput" placeholder="유튜브 URL을 입력해 주세요">
-                                <button id="analyzeBtn" class="btn-analyze" onclick="analyzeVideo()">분석하기</button>
-                            </div>
-                            
-                            <!-- 연령 제한 해결 가이드 (파이어폭스 전용) -->
-                            <div id="cookie_guide_area" style="display: none; margin-top: 1.2rem; padding: 1.8rem; border: 2px solid #3ea6ff; border-radius: 12px; background: #f0f9ff;">
+                                <input type="text" id="urlInput" placeholder="?좏뒠?                           <div id="cookie_guide_area" style="display: none; margin-top: 1.2rem; padding: 1.8rem; border: 2px solid #3ea6ff; border-radius: 12px; background: #f0f9ff;">
                                 <div style="font-size: 1rem; color: #0369a1; font-weight: 800; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="color: #ff7114;">
-                                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2v-6h2v6z"/>
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2v-6h2v6z" fill="#0284c7"/>
                                     </svg>
-                                    연령 제한 해결 가이드 (파이어폭스 전용)
+                                    ?곕졊 ?쒗븳 ?닿껐 媛?대뱶 (?뚯씠?댄룺???꾩슜)
                                 </div>
                                 
                                 <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 1.8rem; font-size: 0.9rem; color: #0c4a6e; line-height: 1.6;">
                                     <div style="display: flex; gap: 12px;">
                                         <b style="color: #0284c7; min-width: 20px;">1.</b>
-                                        <span>파이어폭스가 없다면 먼저 설치해 주세요. [<a href="https://www.mozilla.org/ko/firefox/new/" target="_blank" style="color: #0284c7; font-weight: 800; text-decoration: underline;">Firefox 다운로드</a>]</span>
+                                        <span>?뚯씠?댄룺?ㅺ? ?녿떎硫?癒쇱? ?ㅼ튂??二쇱꽭?? [<a href="https://www.mozilla.org/ko/firefox/new/" target="_blank" style="color: #0284c7; font-weight: 800; text-decoration: underline;">Firefox ?ㅼ슫濡쒕뱶</a>]</span>
                                     </div>
                                     <div style="display: flex; gap: 12px;">
                                         <b style="color: #0284c7; min-width: 20px;">2.</b>
-                                        <span>아래 버튼을 누르면 파이어폭스로 영상이 열립니다.</span>
+                                        <span>?꾨옒 <b>[?몄쬆 釉뚮씪?곗? ?닿린]</b> 踰꾪듉???꾨Ⅴ硫??뚯씠?댄룺?ㅻ줈 ?곸긽???대┰?덈떎.</span>
                                     </div>
                                     <div style="display: flex; gap: 12px;">
                                         <b style="color: #0284c7; min-width: 20px;">3.</b>
-                                        <span>로그인이 안 되어 있다면 <b>성인 인증된 계정</b>으로 로그인해 주세요.</span>
+                                        <span>濡쒓렇?몄씠 ???섏뼱 ?덈떎硫?<b>?깆씤 ?몄쬆??怨꾩젙</b>?쇰줈 濡쒓렇?명빐 二쇱꽭??</span>
                                     </div>
                                     <div style="display: flex; gap: 12px;">
                                         <b style="color: #0284c7; min-width: 20px;">4.</b>
-                                        <span>영상이 정상 재생되면, <b>파이어폭스 창을 완전히 닫아주세요.</b></span>
+                                        <span>?곸긽???뺤긽 ?ъ깮?섎㈃, <b>?뚯씠?댄룺??李쎌쓣 ?꾩쟾???レ븘二쇱꽭??</b> <br>(?ル뒗 利됱떆 ?꾩옱 ?섏씠吏?먯꽌 遺꾩꽍???먮룞?쇰줈 ?꾨즺?⑸땲??)</span>
                                     </div>
                                 </div>
 
-                                <button id="btn_open_auth" onclick="openAuthBrowser()" style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: #ff7114; color: white; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(230, 96, 0, 0.3);">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                                    인증 브라우저(Firefox)로 영상 열기
-                                </button>
-                                
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <!-- ?몄쬆 ?섎떒 怨좎젙 (?쒕∼?ㅼ슫 ?쒓굅) -->
+                                    <button id="btn_open_auth" onclick="openAuthBrowser()" style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: #0284c7; color: white; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                        ?몄쬆 釉뚮씪?곗?(Firefox)濡??곸긽 ?닿린
+                                    </button>
+                                </div>
                                 <div id="auth_waiting_msg" style="display: none; margin-top: 15px; padding: 15px; background: #fff; border-radius: 12px; border: 2px solid #bae6fd; font-size: 0.95rem; color: #0369a1; font-weight: 800; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
-                                    ⏳ <b>파이어폭스</b>에서 로그인 확인 후, <b style="color: #e11d48; text-decoration: underline;">창을 완전히 닫아주세요!</b><br>
-                                    <span style="font-size: 0.8rem; color: #0ea5e9; font-weight: 600;">(닫히는 순간 분석 결과를 현재 페이지에 즉시 표시합니다)</span>
+                                    ??<b>?뚯씠?댄룺??/b>?먯꽌 濡쒓렇???뺤씤 ?? <b style="color: #e11d48; text-decoration: underline;">李쎌쓣 ?꾩쟾???レ븘二쇱꽭??</b><br>
+                                    <span style="font-size: 0.8rem; color: #0ea5e9; font-weight: 600;">(遺꾩꽍 寃곌낵媛 ?먮룞?쇰줈 ?꾩옱 ?섏씠吏???쒖떆?⑸땲??</span>
+                                </div>
+                            </div>: 15px; padding: 12px; background: #fff; border-radius: 10px; border: 1.5px solid #bae6fd; font-size: 0.85rem; color: #0369a1; font-weight: 700; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    ??<b>?뚯씠?댄룺??Firefox)</b>?먯꽌 濡쒓렇???뺤씤 ?? <b style="color: #e11d48; text-decoration: underline;">李쎌쓣 ?꾩쟾???レ븘二쇱꽭??</b><br>
+                                    <span style="font-size: 0.75rem; color: #0ea5e9; font-weight: 600;">(李쎌씠 ?ロ엳硫??먯씠?꾪듃媛 荑좏궎瑜?罹≪쿂?섏뿬 ?먮룞?쇰줈 ?꾨즺?⑸땲??</span>
                                 </div>
                             </div>
                         </div>
@@ -385,23 +387,23 @@
                             <div style="display: flex; gap: 1.2rem; flex-wrap: wrap;">
                                 <div style="flex: 1.2; min-width: 260px;">
                                     <img id="thumbnail" src="" alt="Thumbnail">
-                                    <h3 id="videoTitle">영상 제목</h3>
+                                    <h3 id="videoTitle">?곸긽 ?쒕ぉ</h3>
                                 </div>
                                 <div style="flex: 1; min-width: 240px; text-align: left;">
-                                    <label class="option-label">파일 형식</label>
+                                    <label class="option-label">?뚯씪 ?뺤떇</label>
                                     <div class="format-toggle">
                                         <button class="active" onclick="setFormat('mp4', this)">Video (MP4)</button>
                                         <button onclick="setFormat('mp3', this)">Audio (MP3)</button>
                                     </div>
 
                                     <div id="resolutionArea" style="margin-top: 1.2rem;">
-                                        <label class="option-label">해상도 선택</label>
+                                        <label class="option-label">?댁긽???좏깮</label>
                                         <div id="resolutionChips" class="res-chips">
-                                            <!-- 자바스크립트로 동적 생성됨 -->
+                                            <!-- ?먮컮?ㅽ겕由쏀듃濡??숈쟻 ?앹꽦??-->
                                         </div>
                                     </div>
                                     
-                                    <button id="downloadBtn" class="btn-analyze" style="width: 100%; height: 48px; margin-top: 1.2rem; font-size: 1rem;" onclick="startDownload()">다운로드 시작</button>
+                                    <button id="downloadBtn" class="btn-analyze" style="width: 100%; height: 48px; margin-top: 1.2rem; font-size: 1rem;" onclick="startDownload()">?ㅼ슫濡쒕뱶 ?쒖옉</button>
                                 </div>
                             </div>
                         </div>
@@ -413,14 +415,14 @@
                             </div>
                             <div class="progress-info">
                                 <span id="progressPercent">0%</span>
-                                <span id="downloadInfo">준비 중...</span>
+                                <span id="downloadInfo">以鍮?以?..</span>
                             </div>
                             <div id="log"></div>
                         </div>
                     </div>
 
                     <div style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">
-                        🔒 모든 다운로드는 본인의 PC에서 직접 처리되어 안전합니다.
+                        ?뵏 紐⑤뱺 ?ㅼ슫濡쒕뱶??蹂몄씤??PC?먯꽌 吏곸젒 泥섎━?섏뼱 ?덉쟾?⑸땲??
                     </div>
                 </div>
             </div>
@@ -454,15 +456,15 @@
 
         let currentFormat = 'mp4';
         let currentQuality = '1080';
-        let currentUrl = ''; // 현재 분석된 URL 저장용
-        let lastActualBrowser = 'none'; // 마지막으로 성공한 분석에서 사용된 브라우저
+        let currentUrl = ''; // ?꾩옱 遺꾩꽍??URL ??μ슜
+        let availableResolutions = [];
 
-        // 에이전트 상태와 입력값에 따라 버튼을 업데이트하는 통합 함수
+        // ?먯씠?꾪듃 ?곹깭? ?낅젰媛믪뿉 ?곕씪 踰꾪듉???낅뜲?댄듃?섎뒗 ?듯빀 ?⑥닔
         function updateAnalyzeButton(isReady) {
             const url = urlInput.value.trim();
-            const isAnalyzing = analyzeBtn.innerHTML.includes('분석 중...');
+            const isAnalyzing = analyzeBtn.innerHTML.includes('遺꾩꽍 以?..');
             
-            // 에이전트 준비 전에는 입력창도 막음
+            // ?먯씠?꾪듃 以鍮??꾩뿉???낅젰李쎈룄 留됱쓬
             urlInput.disabled = !isReady;
             
             if (isAnalyzing) return;
@@ -471,9 +473,9 @@
 
             if (!isReady) {
                 analyzeBtn.disabled = true;
-                analyzeBtn.innerHTML = '에이전트 준비 중...';
+                analyzeBtn.innerHTML = '?먯씠?꾪듃 以鍮?以?..';
             } else {
-                analyzeBtn.innerHTML = '분석하기';
+                analyzeBtn.innerHTML = '遺꾩꽍?섍린';
                 analyzeBtn.disabled = !url;
             }
         }
@@ -485,60 +487,59 @@
                 
                 const isReady = data.ytdlp && data.ffmpeg;
                 statusDot.className = isReady ? 'status-dot online' : 'status-dot busy';
-                statusText.innerText = isReady ? '에이전트 준비 완료' : '시스템 구성 요소 점검 및 설치 중...';
+                statusText.innerText = isReady ? '?먯씠?꾪듃 以鍮??꾨즺' : '?쒖뒪??援ъ꽦 ?붿냼 ?먭? 諛??ㅼ튂 以?..';
                 
                 updateAnalyzeButton(isReady);
             } catch (e) {
                 statusDot.className = 'status-dot offline';
                 
-                // 설치 여부에 따라 문구 변경 (localStorage 활용)
+                // ?ㅼ튂 ?щ????곕씪 臾멸뎄 蹂寃?(localStorage ?쒖슜)
                 const isInstalled = localStorage.getItem('snaptask_installed');
                 if (isInstalled) {
                     statusText.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <span style="color: #64748b;">에이전트 꺼짐</span>
+                            <span style="color: #64748b;">?먯씠?꾪듃 爰쇱쭚</span>
                             <button class="btn-launch" onclick="launchAgent()">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                                엔진 가동하기
-                            </button>
+                                ?붿쭊 媛?숉븯湲?                            </button>
                         </div>
                     `;
                 } else {
                     statusText.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <span style="color: #64748b;">에이전트 미설치</span>
+                            <span style="color: #64748b;">?먯씠?꾪듃 誘몄꽕移?/span>
                             <button class="btn-launch" style="background: linear-gradient(135deg, #3b82f6, #60a5fa); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); animation: none;" onclick="showAgentGuide()">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                스타터 설치 안내
+                                ?ㅽ????ㅼ튂 ?덈궡
                             </button>
                         </div>
                     `;
                 }
                 
-                if (!analyzeBtn.innerHTML.includes('분석 중...')) {
+                if (!analyzeBtn.innerHTML.includes('遺꾩꽍 以?..')) {
                     analyzeBtn.disabled = true;
-                    analyzeBtn.innerHTML = '에이전트 연결 대기 중...';
+                    analyzeBtn.innerHTML = '?먯씠?꾪듃 ?곌껐 ?湲?以?..';
                 }
             }
         }
 
         function launchAgent() {
-            // 커스텀 프로토콜 호출 (스타터 실행)
+            // 而ㅼ뒪? ?꾨줈?좎퐳 ?몄텧 (?ㅽ????ㅽ뻾)
             window.location.assign('snaptask://launch?app=youtube');
             
             Swal.fire({
-                title: '에이전트 가동 요청',
-                text: '시스템 로딩 중입니다. 잠시만 기다려 주세요...',
-                html: '<br><small style="color: #888;">반응이 없다면 스타터가 설치되어 있는지 확인해 주세요.</small><br><br><button onclick="showAgentGuide()" style="background:#f1f5f9; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:700; font-size:0.8rem;">[설치 안내 보기]</button>',
+                title: '?먯씠?꾪듃 媛???붿껌',
+                text: '?쒖뒪??濡쒕뵫 以묒엯?덈떎. ?좎떆留?湲곕떎??二쇱꽭??..',
+                html: '<br><small style="color: #888;">諛섏쓳???녿떎硫??ㅽ??곌? ?ㅼ튂?섏뼱 ?덈뒗吏 ?뺤씤??二쇱꽭??</small><br><br><button onclick="showAgentGuide()" style="background:#f1f5f9; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:700; font-size:0.8rem;">[?ㅼ튂 ?덈궡 蹂닿린]</button>',
                 icon: 'info',
                 timer: 5000,
                 showConfirmButton: true,
-                confirmButtonText: '확인',
+                confirmButtonText: '?뺤씤',
                 confirmButtonColor: '#3ea6ff'
             });
         }
 
-        // 입력창 타이핑 시 실시간 활성화 체크
+        // ?낅젰李???댄븨 ???ㅼ떆媛??쒖꽦??泥댄겕
         urlInput.addEventListener('input', () => {
             const isReady = statusDot.classList.contains('online');
             updateAnalyzeButton(isReady);
@@ -546,35 +547,35 @@
 
         function showAgentGuide() {
             Swal.fire({
-                title: 'Snap-Task V2 시작하기',
+                title: 'Snap-Task V2 ?쒖옉?섍린',
                 html: `
                     <div style="text-align: left; line-height: 1.6; font-size: 0.95rem;">
-                        이제 번거로운 개별 설치 없이 <b>스타터 하나로 충분</b>합니다.<br><br>
-                        <b>1. V2 스타터 다운로드 (최초 1회)</b><br>
-                        아래 버튼을 눌러 통합 스타터를 받아주세요.<br>
+                        ?댁젣 踰덇굅濡쒖슫 媛쒕퀎 ?ㅼ튂 ?놁씠 <b>?ㅽ????섎굹濡?異⑸텇</b>?⑸땲??<br><br>
+                        <b>1. V2 ?ㅽ????ㅼ슫濡쒕뱶 (理쒖큹 1??</b><br>
+                        ?꾨옒 踰꾪듉???뚮윭 ?듯빀 ?ㅽ??곕? 諛쏆븘二쇱꽭??<br>
                         <a href="../../dist/st-starter.exe" download onclick="localStorage.setItem('snaptask_installed', 'true')"
                            style="display: inline-block; background: #007bff; color: white; padding: 5px 15px; border-radius: 4px; text-decoration: none; margin: 10px 0; font-weight: 800;">
-                           st-starter.exe 다운로드
+                           st-starter.exe ?ㅼ슫濡쒕뱶
                         </a><br>
                         
-                        <b>2. 프로그램 실행</b><br>
-                        다운로드한 <code>st-starter.exe</code>를 한 번만 실행하면 시스템 등록이 완료됩니다.<br><br>
+                        <b>2. ?꾨줈洹몃옩 ?ㅽ뻾</b><br>
+                        ?ㅼ슫濡쒕뱶??<code>st-starter.exe</code>瑜???踰덈쭔 ?ㅽ뻾?섎㈃ ?쒖뒪???깅줉???꾨즺?⑸땲??<br><br>
                         
-                        <b>3. 즉시 가동</b><br>
-                        이후에는 <b>[가동하기]</b>만 누르면 엔진이 <b>백그라운드</b>에서 조용히 시작됩니다. (별도의 까만 창이 뜨지 않습니다.)<br><br>
-                        <small style="color: grey;">* 25초간 사용하지 않으면 자동으로 종료되어 리소스를 보호합니다.</small>
+                        <b>3. 利됱떆 媛??/b><br>
+                        ?댄썑?먮뒗 <b>[媛?숉븯湲?</b>留??꾨Ⅴ硫??붿쭊??<b>諛깃렇?쇱슫??/b>?먯꽌 議곗슜???쒖옉?⑸땲?? (蹂꾨룄??源뚮쭔 李쎌씠 ?⑥? ?딆뒿?덈떎.)<br><br>
+                        <small style="color: grey;">* 25珥덇컙 ?ъ슜?섏? ?딆쑝硫??먮룞?쇰줈 醫낅즺?섏뼱 由ъ냼?ㅻ? 蹂댄샇?⑸땲??</small>
                     </div>
                 `,
                 icon: 'info',
-                confirmButtonText: '확인',
+                confirmButtonText: '?뺤씤',
                 confirmButtonColor: '#007bff'
             }).then(() => checkStatus());
         }
 
         async function setupBridge() {
             setupBtn.disabled = true;
-            setupBtn.innerHTML = '처리 중...';
-            statusText.innerText = '필수 파일 설치 및 업데이트 중... (약 1분 소요)';
+            setupBtn.innerHTML = '泥섎━ 以?..';
+            statusText.innerText = '?꾩닔 ?뚯씪 ?ㅼ튂 諛??낅뜲?댄듃 以?.. (??1遺??뚯슂)';
             
             try {
                 const res = await fetch(`${BRIDGE_URL}/setup`);
@@ -582,60 +583,54 @@
                 
                 Swal.fire({
                     icon: 'success',
-                    title: '설정 완료',
-                    text: '이제 모든 기능을 안정적으로 사용할 수 있습니다.',
+                    title: '?ㅼ젙 ?꾨즺',
+                    text: '?댁젣 紐⑤뱺 湲곕뒫???덉젙?곸쑝濡??ъ슜?????덉뒿?덈떎.',
                     confirmButtonColor: '#ff0000'
                 });
             } catch (e) {
-                Swal.fire('오류', '에이전트 설정 중 문제가 발생했습니다.', 'error');
+                Swal.fire('?ㅻ쪟', '?먯씠?꾪듃 ?ㅼ젙 以?臾몄젣媛 諛쒖깮?덉뒿?덈떎.', 'error');
             } finally {
                 setupBtn.disabled = false;
-                setupBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg> 초기화/업데이트';
+                setupBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg> 珥덇린???낅뜲?댄듃';
                 checkStatus();
             }
         }
 
         function enableAnalyzeUI() {
-            analyzeBtn.innerHTML = '분석하기';
+            analyzeBtn.innerHTML = '遺꾩꽍?섍린';
             analyzeBtn.disabled = false;
             analyzeBtn.onclick = analyzeVideo;
         }
 
-        async function analyzeVideo(forceBrowser = null) {
+        async function analyzeVideo() {
             const url = urlInput.value.trim();
-            if (!url) return Swal.fire('알림', '유튜브 URL을 입력해 주세요.', 'info');
-            currentUrl = url; // 전역 변수에 저장
-            lastActualBrowser = 'none'; // 새로운 분석 시작 시 초기화
-
-            // 1. UI 및 상태 초기화
-            analyzeBtn.disabled = true;
-            analyzeBtn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 분석 중...';
+            if (!url) return Swal.fire('?뚮┝', '?좏뒠釉?URL???낅젰??二쇱꽭??', 'info');
+            currentUrl = url; // ?꾩뿭 蹂?섏뿉 ???
+            // 1. UI 諛??곹깭 珥덇린??            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 遺꾩꽍 以?..';
             
-            // 분석 시작 시 브라우저 옵션은 파이어폭스로 고정
-            const browser = 'firefox';
+            // 遺꾩꽍 ?쒖옉 ??媛?대뱶???쇰떒 ?④? (?깃났 ???④? ?좎?, ?ㅽ뙣 ???ъ떆???쒖뿉留??몄텧)
+            let browser = document.getElementById('browser_cookies').value;
             
-            if (browser === 'firefox') {
+            if (browser === 'none') {
                 step2.style.display = 'none';
                 step3.style.display = 'none';
             }
 
-            // 분석 시작 시 가이드 영역 참조 및 일단 숨김 (실패 시에만 다시 노출)
+            // 遺꾩꽍 ?쒖옉 ??媛?대뱶 ?곸뿭 李몄“ 諛??쇰떒 ?④? (?ㅽ뙣 ?쒖뿉留??ㅼ떆 ?몄텧)
             const guideArea = document.getElementById('cookie_guide_area');
             const isAutoResume = new URLSearchParams(window.location.search).get('auto') === 'true';
             
-            // 매개변수로 전달된 브라우저가 '문자열'인 경우에만 사용 (이벤트 객체 유입 방지)
-            let actualBrowser = (typeof forceBrowser === 'string' ? forceBrowser : null) || (isAutoResume ? 'firefox' : 'none');
-
-            // 분석 시작 시 URL의 auto 파라미터는 즉시 제거하여 이후 새로고침 시 무한 루프 방지
-            if (isAutoResume) {
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, '', newUrl);
+            // ?먮룞 ?ъ떆?묒씠 ?꾨땲怨?媛?대뱶媛 蹂댁씠吏 ?딅뒗 ?곹깭(珥덇린 ?대┃)?쇰㈃ 釉뚮씪?곗?瑜?'none'?쇰줈 媛뺤젣
+            if (!isAutoResume && guideArea.style.display === 'none') {
+                document.getElementById('browser_cookies').value = 'none';
+                browser = 'none';
             }
 
             if (guideArea) guideArea.style.display = 'none';
 
             try {
-                const res = await fetch(`${BRIDGE_URL}/info?url=${encodeURIComponent(url)}&browser=${actualBrowser}`);
+                const res = await fetch(`${BRIDGE_URL}/info?url=${encodeURIComponent(url)}&browser=${browser}`);
                 const data = await res.json();
                 if (data.error) {
                     const err = new Error(data.error);
@@ -643,11 +638,7 @@
                     throw err;
                 }
 
-                // 분석 성공 즉시 브라우저 정보 저장 (지연 시간 이전에 확보)
-                lastActualBrowser = actualBrowser;
-                console.log(`[분석 성공] 사용된 브라우저: ${lastActualBrowser}`);
-
-                // 썸네일 로딩 감지 (캐시 방지 위해 속도보다 정확성 우선)
+                // ?몃꽕??濡쒕뵫 媛먯? (罹먯떆 諛⑹? ?꾪빐 ?띾룄蹂대떎 ?뺥솗???곗꽑)
                 const thumbnailLoaded = new Promise((resolve) => {
                     thumbnail.onload = resolve;
                     thumbnail.onerror = resolve;
@@ -658,57 +649,53 @@
                 availableResolutions = data.resolutions || [];
                 renderResolutions();
 
-                // 이미지가 브라우저에 캐시되었더라도 로딩 프로세스를 명확히 기다림
-                await thumbnailLoaded;
+                // ?대?吏媛 釉뚮씪?곗???罹먯떆?섏뿀?붾씪??濡쒕뵫 ?꾨줈?몄뒪瑜?紐낇솗??湲곕떎由?                await thumbnailLoaded;
                 
-                // 화면 표시 시작
+                // ?붾㈃ ?쒖떆 ?쒖옉
                 step2.style.display = 'block';
                 
-                // 브라우저 렌더링 루프 동기화 (레이아웃 확정 대기)
+                // 釉뚮씪?곗? ?뚮뜑留?猷⑦봽 ?숆린??(?덉씠?꾩썐 ?뺤젙 ?湲?
                 await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
                 
-                // 자연스러운 스크롤
-                step2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // ?먯뿰?ㅻ윭???ㅽ겕濡?                step2.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                // 애니메이션(0.4s) 및 스크롤 안정화 대기 (충분히 긴 1.2초 대기)
-                // 이 시점이 되어야 유저가 화면이 '다 떴다'고 인지함
-                await new Promise(r => setTimeout(r, 1200));
+                // ?좊땲硫붿씠??0.4s) 諛??ㅽ겕濡??덉젙???湲?(異⑸텇??湲?1.2珥??湲?
+                // ???쒖젏???섏뼱???좎?媛 ?붾㈃??'???대떎'怨??몄???                await new Promise(r => setTimeout(r, 1200));
 
                 downloadBtn.onclick = startDownload;
                 
-                // 성공 시에도 혹시 모를 로딩 상태를 위해 버튼 복구
+                // ?깃났 ?쒖뿉???뱀떆 紐⑤? 濡쒕뵫 ?곹깭瑜??꾪빐 踰꾪듉 蹂듦뎄
                 enableAnalyzeUI();
 
             } catch (e) {
-                // 분석 실패 시 입력창 다시 활성화
-                enableAnalyzeUI();
+                // 遺꾩꽍 ?ㅽ뙣 ???낅젰李??ㅼ떆 ?쒖꽦??                enableAnalyzeUI();
 
                 if (e.message === '[ERROR_AGE_RESTRICTED]' || e.message === '[ERROR_BROWSER_LOCKED]' || e.message.includes('DPAPI') || e.details?.includes('DPAPI')) {
                     const guideArea = document.getElementById('cookie_guide_area');
-                    guideArea.style.display = 'block'; // 가이드 노출
+                    guideArea.style.display = 'block'; // 媛?대뱶 ?몄텧
                     
                     Swal.fire({
-                        title: '인증 가이드 확인',
-                        html: `이 영상은 <b>성인 인증</b>이 필요하거나 브라우저 보안 정책의 영향을 받습니다.<br><br>가장 확실한 해결을 위해 아래 추가된 <b>파이어폭스(Firefox) 인증 가이드</b>를 따라주세요.`,
+                        title: '?몄쬆 媛?대뱶 ?뺤씤',
+                        html: `???곸긽? <b>?깆씤 ?몄쬆</b>???꾩슂?섍굅??釉뚮씪?곗? 蹂댁븞 ?뺤콉???곹뼢??諛쏆뒿?덈떎.<br><br>媛???뺤떎???닿껐???꾪빐 ?꾨옒 異붽???<b>?뚯씠?댄룺??Firefox) ?몄쬆 媛?대뱶</b>瑜??곕씪二쇱꽭??`,
                         icon: 'info',
-                        confirmButtonText: '가이드 확인',
+                        confirmButtonText: '媛?대뱶 ?뺤씤',
                         confirmButtonColor: '#0284c7'
                     });
                 } else {
-                    const errorMsg = e.message || '영상 정보를 가져오지 못했습니다.';
+                    const errorMsg = e.message || '?곸긽 ?뺣낫瑜?媛?몄삤吏 紐삵뻽?듬땲??';
                     const details = e.details ? `<br><small style="color: #666; font-size: 0.7rem;">${e.details}</small>` : '';
                     
                     Swal.fire({
                         icon: 'error',
-                        title: '분석 실패',
+                        title: '遺꾩꽍 ?ㅽ뙣',
                         html: `${errorMsg}${details}`,
                         confirmButtonColor: '#ff0000'
                     });
                 }
                 enableAnalyzeUI();
             } finally {
-                // 기존의 무조건적 활성화 로직 제거 (위에서 성공/실패 시 각각 처리)
-                console.log('분석 프로세스 종료');
+                // 湲곗〈??臾댁“嫄댁쟻 ?쒖꽦??濡쒖쭅 ?쒓굅 (?꾩뿉???깃났/?ㅽ뙣 ??媛곴컖 泥섎━)
+                console.log('遺꾩꽍 ?꾨줈?몄뒪 醫낅즺');
             }
         }
 
@@ -728,7 +715,7 @@
 
         function renderResolutions() {
             resolutionChips.innerHTML = '';
-            // 프리셋 해상도들
+            // ?꾨━???댁긽?꾨뱾
             const presets = [2160, 1440, 1080, 720, 480, 360];
             let defaultSet = false;
 
@@ -745,7 +732,7 @@
                         chip.classList.add('active');
                     };
                     
-                    // 기본값 1080p 시도, 없으면 가능한 최고 화질
+                    // 湲곕낯媛?1080p ?쒕룄, ?놁쑝硫?媛?ν븳 理쒓퀬 ?붿쭏
                     if (!defaultSet && (res === 1080 || !presets.includes(1080))) {
                         chip.click();
                         defaultSet = true;
@@ -761,67 +748,64 @@
         }
 
         function startDownload() {
-            const browser = lastActualBrowser;
-            console.log(`[다운로드 시작] 전송될 브라우저 쿠키: ${browser}`);
+            const browser = document.getElementById('browser_cookies').value;
             
-            // UI 초기화: 진행 상태창과 로그창을 보여줍니다.
+            // UI 珥덇린?? 吏꾪뻾 ?곹깭李쎄낵 濡쒓렇李쎌쓣 蹂댁뿬以띾땲??
             step3.style.display = 'block';
             log.style.display = 'block';
-            log.innerHTML = ''; // 이전 로그 초기화
-            progressBar.style.width = '0%';
+            log.innerHTML = ''; // ?댁쟾 濡쒓렇 珥덇린??            progressBar.style.width = '0%';
             progressPercent.innerText = '0%';
-            downloadInfo.innerText = '다운로드 준비 중...';
+            downloadInfo.innerText = '?ㅼ슫濡쒕뱶 以鍮?以?..';
             
             const query = `url=${encodeURIComponent(currentUrl)}&format=${currentFormat}&quality=${currentQuality}&browser=${browser}`;
             const eventSource = new EventSource(`${BRIDGE_URL}/download?${query}`);
 
             eventSource.onmessage = (event) => {
                 const data = event.data;
-                console.log('[에이전트 로그]', data); // 모든 로그 콘솔 출력
                 
                 if (data.includes('[DONE]')) {
                     eventSource.close();
-                    downloadInfo.innerText = '저장 완료!';
+                    downloadInfo.innerText = '????꾨즺!';
                     
                     Swal.fire({
                         icon: 'success',
-                        title: '다운로드 완료',
-                        text: '다운로드 폴더에 안전하게 저장되었습니다.',
+                        title: '?ㅼ슫濡쒕뱶 ?꾨즺',
+                        text: '?ㅼ슫濡쒕뱶 ?대뜑???덉쟾?섍쾶 ??λ릺?덉뒿?덈떎.',
                         showCancelButton: true,
-                        confirmButtonText: '폴더 열기',
-                        cancelButtonText: '닫기',
+                        confirmButtonText: '?대뜑 ?닿린',
+                        cancelButtonText: '?リ린',
                         confirmButtonColor: '#3ea6ff'
                     }).then((result) => {
                         if (result.isConfirmed) fetch(`${BRIDGE_URL}/open-folder`);
-                        window.location.href = window.location.pathname; // URL 파라미터 없이 초기화
+                        location.reload(); // 珥덇린 ?곹깭濡?蹂듦뎄
                     });
                     return;
                 }
 
                 if (data.includes('[ERROR_AGE_RESTRICTED]')) {
                     eventSource.close();
-                    statusText.innerText = '성인 인증 필요';
+                    statusText.innerText = '?깆씤 ?몄쬆 ?꾩슂';
                     Swal.fire({
-                        title: '연령 제한 확인됨',
+                        title: '?곕졊 ?쒗븳 ?뺤씤??,
                         html: `
                             <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
-                                이 영상은 성인 인증이 필요하여 현재 상태로는 받을 수 없습니다.<br><br>
-                                <b>해결 방법:</b><br>
-                                1. 브라우저(크롬/엣지 등)에서 유튜브에 로그인합니다.<br>
-                                2. 성인 인증 절차를 완료합니다.<br>
-                                3. 현재 페이지 설정에서 파이어폭스(Firefox)를 사용하도록 안내를 따라주세요.<br>
-                                <span style="color: #ff0000; font-weight: 800;">* 주의: 브라우저가 켜져 있으면 쿠키를 못 읽을 수 있으니, 파이어폭스를 완전히 끄고 재시도해 보세요!</span>
+                                ???곸긽? ?깆씤 ?몄쬆???꾩슂?섏뿬 ?꾩옱 ?곹깭濡쒕뒗 諛쏆쓣 ???놁뒿?덈떎.<br><br>
+                                <b>?닿껐 諛⑸쾿:</b><br>
+                                1. 釉뚮씪?곗?(?щ＼/?ｌ? ???먯꽌 ?좏뒠釉뚯뿉 濡쒓렇?명빀?덈떎.<br>
+                                2. ?깆씤 ?몄쬆 ?덉감瑜??꾨즺?⑸땲??<br>
+                                3. ?꾩옱 ?섏씠吏 ?ㅼ젙?먯꽌 ?대떦 釉뚮씪?곗?(Whale ??瑜??좏깮?섏꽭??<br>
+                                <span style="color: #ff0000; font-weight: 800;">* 二쇱쓽: 釉뚮씪?곗?媛 耳쒖졇 ?덉쑝硫?荑좏궎瑜?紐??쎌쓣 ???덉쑝?? ?좏깮??釉뚮씪?곗?瑜??꾧퀬 ?ъ떆?꾪빐 蹂댁꽭??</span>
                             </div>
                         `,
                         icon: 'warning',
-                        confirmButtonText: '확인'
-                    }).then(() => window.location.href = window.location.pathname);
+                        confirmButtonText: '?뺤씤'
+                    }).then(() => location.reload());
                     return;
                 }
 
                 if (data.includes('[ERROR]')) {
                     eventSource.close();
-                    Swal.fire('오류 발생', data, 'error').then(() => window.location.href = window.location.pathname);
+                    Swal.fire('?ㅻ쪟 諛쒖깮', data, 'error').then(() => location.reload());
                     return;
                 }
 
@@ -830,7 +814,7 @@
                     const p = percentMatch[1];
                     progressBar.style.width = p + '%';
                     progressPercent.innerText = p + '%';
-                    downloadInfo.innerText = '파일 전송 및 변환 중...';
+                    downloadInfo.innerText = '?뚯씪 ?꾩넚 諛?蹂??以?..';
                 }
 
                 const logLine = document.createElement('div');
@@ -841,7 +825,7 @@
 
             eventSource.onerror = () => {
                 eventSource.close();
-                Swal.fire('연결 끊김', '에이전트와의 연결이 끊어졌습니다.', 'error');
+                Swal.fire('?곌껐 ?딄?', '?먯씠?꾪듃????곌껐???딆뼱議뚯뒿?덈떎.', 'error');
             };
         }
 
@@ -859,7 +843,7 @@
             document.getElementById('sidebarOverlay').classList.remove('open');
         });
 
-        let detectedBrowser = 'none'; // 자동 감지된 브라우저 저장용
+        let detectedBrowser = 'none'; // ?먮룞 媛먯???釉뚮씪?곗? ??μ슜
 
         function autoDetectBrowser() {
             const ua = navigator.userAgent.toLowerCase();
@@ -869,29 +853,36 @@
             else if (ua.includes('chrome')) detectedBrowser = 'chrome';
             else if (ua.includes('firefox')) detectedBrowser = 'firefox';
             
-            console.log('감지된 브라우저:', detectedBrowser);
+            console.log('媛먯???釉뚮씪?곗?:', detectedBrowser);
+            
+            // ?쒕∼?ㅼ슫 湲곕낯媛믪? 'none'(濡쒓렇???????쇰줈 ?좎?
+            // 媛먯???釉뚮씪?곗????섏쨷???곕졊 ?쒗븳 諛쒖깮 ?쒖뿉留?異붿쿇?⑹쑝濡??ъ슜
+            const select = document.getElementById('browser_cookies');
+            if (select) select.value = 'none';
         }
 
         async function openAuthBrowser() {
-            const browser = 'firefox';
+            const browser = document.getElementById('browser_cookies').value;
+            if (browser === 'none') return Swal.fire('?뚮┝', '?몄쬆??釉뚮씪?곗?瑜??좏깮??二쇱꽭??', 'info');
             
             const url = urlInput.value.trim();
             if (!url) return;
 
-            // 에이전트에게 브라우저 열기 요청
+            // ?먯씠?꾪듃?먭쾶 釉뚮씪?곗? ?닿린 ?붿껌
             try {
                 await fetch(`${BRIDGE_URL}/reopen-browser?browser=${browser}&url=${encodeURIComponent(url)}`);
                 
                 document.getElementById('auth_waiting_msg').style.display = 'block';
+                document.getElementById('current_auth_browser_name').innerText = browser.toUpperCase();
                 
                 const btn = document.getElementById('btn_open_auth');
                 btn.disabled = true;
-                btn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 브라우저 닫기 대기 중...';
+                btn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 釉뚮씪?곗? ?リ린 ?湲?以?..';
                 
-                // 브라우저가 닫힐 때까지 감시 시작
+                // 釉뚮씪?곗?媛 ?ロ옄 ?뚭퉴吏 媛먯떆 ?쒖옉
                 waitForBrowserClose(browser);
             } catch (e) {
-                Swal.fire('연결 오류', '에이전트와 통신할 수 없습니다.', 'error');
+                Swal.fire('?곌껐 ?ㅻ쪟', '?먯씠?꾪듃? ?듭떊?????놁뒿?덈떎.', 'error');
             }
         }
 
@@ -902,17 +893,22 @@
                     const data = await res.json();
                     
                     if (!data.running) {
-                        // 브라우저가 닫혔음! 현재 창에서 즉시 분석 재개
+                        // 釉뚮씪?곗?媛 ?ロ삍?? ?먮룞?쇰줈 ?ъ떆???붿껌
+                        // ?꾩옱 ?섏씠吏??URL???ㅼ떆 ?대룄濡??먯씠?꾪듃?먭쾶 ?붿껌
+                        const currentUrl = window.location.origin + window.location.pathname;
+                        const resumeUrl = `${currentUrl}?url=${encodeURIComponent(urlInput.value.trim())}&browser=${browser}&auto=true`;
+                        
+                        // ?꾩옱 ?ъ슜 以묒씤 硫붿씤 釉뚮씪?곗?(detectedBrowser)濡??ㅼ떆 ?쎈땲??
+                        await fetch(`${BRIDGE_URL}/reopen-browser?browser=${detectedBrowser}&url=${encodeURIComponent(resumeUrl)}`);
+                        
+                        // ?꾩옱 李쎌? ?덈궡 硫붿떆吏 ?쒖떆
                         Swal.fire({
-                            title: '인증 완료!',
-                            text: '쿠키를 성공적으로 캡처했습니다. 분석을 재개합니다...',
+                            title: '?몄쬆 ?꾨즺!',
+                            html: '荑좏궎瑜??깃났?곸쑝濡?罹≪쿂?덉뒿?덈떎.<br>?좎떆 ???묒뾽 李쎌씠 ?ㅼ떆 ?대┰?덈떎.',
                             icon: 'success',
                             showConfirmButton: false,
                             timer: 2000
                         });
-                        
-                        // 현재 페이지에서 분석 함수 직접 호출 (파이어폭스 쿠키 사용 강제)
-                        analyzeVideo('firefox');
                         return;
                     }
                     setTimeout(check, 1000);
@@ -923,7 +919,7 @@
             check();
         }
 
-        // 페이지 로드 시 자동 재개 확인
+        // ?섏씠吏 濡쒕뱶 ???먮룞 ?ш컻 ?뺤씤
         function checkAutoResume() {
             const params = new URLSearchParams(window.location.search);
             if (params.get('auto') === 'true') {
@@ -931,20 +927,23 @@
                 const browser = params.get('browser');
                 if (url) {
                     urlInput.value = url;
-                    // 가이드 영역을 보이게 해서 유저가 무엇이 진행되는지 알게 함
-                    document.getElementById('cookie_guide_area').style.display = 'block';
-                    setTimeout(() => {
-                        analyzeVideo();
-                    }, 500);
+                    // 媛?대뱶 ?곸뿭??蹂댁씠寃??댁꽌 ?좎?媛 臾댁뾿??吏꾪뻾?섎뒗吏 ?뚭쾶 ??                    document.getElementById('cookie_guide_area').style.display = 'block';
+                    if (browser) {
+                        setTimeout(() => {
+                            document.getElementById('browser_cookies').value = browser;
+                            analyzeVideo();
+                        }, 500);
+                    }
                 }
             }
         }
 
         setInterval(checkStatus, 5000);
         checkStatus();
-        autoDetectBrowser(); // 페이지 로드 시 실행
-        checkAutoResume();   // 자동 재개 체크
+        autoDetectBrowser(); // ?섏씠吏 濡쒕뱶 ???ㅽ뻾
+        checkAutoResume();   // ?먮룞 ?ш컻 泥댄겕
 
     </script>
 </body>
 </html>
+

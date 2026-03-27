@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -334,17 +334,13 @@
                             <div id="statusDot" class="status-dot"></div>
                             <span id="statusText">에이전트 연결 확인 중...</span>
                         </div>
+
                         <div id="step1">
                             <div class="input-row">
-                                <input type="text" id="urlInput" placeholder="유튜브 URL을 입력해 주세요">
-                                <button id="analyzeBtn" class="btn-analyze" onclick="analyzeVideo()">분석하기</button>
-                            </div>
-                            
-                            <!-- 연령 제한 해결 가이드 (파이어폭스 전용) -->
-                            <div id="cookie_guide_area" style="display: none; margin-top: 1.2rem; padding: 1.8rem; border: 2px solid #3ea6ff; border-radius: 12px; background: #f0f9ff;">
+                                <input type="text" id="urlInput" placeholder="유튜�                            <div id="cookie_guide_area" style="display: none; margin-top: 1.2rem; padding: 1.8rem; border: 2px solid #3ea6ff; border-radius: 12px; background: #f0f9ff;">
                                 <div style="font-size: 1rem; color: #0369a1; font-weight: 800; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="color: #ff7114;">
-                                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2v-6h2v6z"/>
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2v-6h2v6z" fill="#0284c7"/>
                                     </svg>
                                     연령 제한 해결 가이드 (파이어폭스 전용)
                                 </div>
@@ -356,7 +352,7 @@
                                     </div>
                                     <div style="display: flex; gap: 12px;">
                                         <b style="color: #0284c7; min-width: 20px;">2.</b>
-                                        <span>아래 버튼을 누르면 파이어폭스로 영상이 열립니다.</span>
+                                        <span>아래 <b>[인증 브라우저 열기]</b> 버튼을 누르면 파이어폭스로 영상이 열립니다.</span>
                                     </div>
                                     <div style="display: flex; gap: 12px;">
                                         <b style="color: #0284c7; min-width: 20px;">3.</b>
@@ -364,18 +360,24 @@
                                     </div>
                                     <div style="display: flex; gap: 12px;">
                                         <b style="color: #0284c7; min-width: 20px;">4.</b>
-                                        <span>영상이 정상 재생되면, <b>파이어폭스 창을 완전히 닫아주세요.</b></span>
+                                        <span>영상이 정상 재생되면, <b>파이어폭스 창을 완전히 닫아주세요.</b> <br>(닫는 즉시 현재 페이지에서 분석이 자동으로 완료됩니다!)</span>
                                     </div>
                                 </div>
 
-                                <button id="btn_open_auth" onclick="openAuthBrowser()" style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: #ff7114; color: white; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(230, 96, 0, 0.3);">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                                    인증 브라우저(Firefox)로 영상 열기
-                                </button>
-                                
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <!-- 인증 수단 고정 (드롭다운 제거) -->
+                                    <button id="btn_open_auth" onclick="openAuthBrowser()" style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: #0284c7; color: white; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                        인증 브라우저(Firefox)로 영상 열기
+                                    </button>
+                                </div>
                                 <div id="auth_waiting_msg" style="display: none; margin-top: 15px; padding: 15px; background: #fff; border-radius: 12px; border: 2px solid #bae6fd; font-size: 0.95rem; color: #0369a1; font-weight: 800; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
                                     ⏳ <b>파이어폭스</b>에서 로그인 확인 후, <b style="color: #e11d48; text-decoration: underline;">창을 완전히 닫아주세요!</b><br>
-                                    <span style="font-size: 0.8rem; color: #0ea5e9; font-weight: 600;">(닫히는 순간 분석 결과를 현재 페이지에 즉시 표시합니다)</span>
+                                    <span style="font-size: 0.8rem; color: #0ea5e9; font-weight: 600;">(분석 결과가 자동으로 현재 페이지에 표시됩니다)</span>
+                                </div>
+                            </div>: 15px; padding: 12px; background: #fff; border-radius: 10px; border: 1.5px solid #bae6fd; font-size: 0.85rem; color: #0369a1; font-weight: 700; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    ⏳ <b>파이어폭스(Firefox)</b>에서 로그인 확인 후, <b style="color: #e11d48; text-decoration: underline;">창을 완전히 닫아주세요!</b><br>
+                                    <span style="font-size: 0.75rem; color: #0ea5e9; font-weight: 600;">(창이 닫히면 에이전트가 쿠키를 캡처하여 자동으로 완료합니다)</span>
                                 </div>
                             </div>
                         </div>
@@ -455,7 +457,7 @@
         let currentFormat = 'mp4';
         let currentQuality = '1080';
         let currentUrl = ''; // 현재 분석된 URL 저장용
-        let lastActualBrowser = 'none'; // 마지막으로 성공한 분석에서 사용된 브라우저
+        let availableResolutions = [];
 
         // 에이전트 상태와 입력값에 따라 버튼을 업데이트하는 통합 함수
         function updateAnalyzeButton(isReady) {
@@ -601,20 +603,19 @@
             analyzeBtn.onclick = analyzeVideo;
         }
 
-        async function analyzeVideo(forceBrowser = null) {
+        async function analyzeVideo() {
             const url = urlInput.value.trim();
             if (!url) return Swal.fire('알림', '유튜브 URL을 입력해 주세요.', 'info');
             currentUrl = url; // 전역 변수에 저장
-            lastActualBrowser = 'none'; // 새로운 분석 시작 시 초기화
 
             // 1. UI 및 상태 초기화
             analyzeBtn.disabled = true;
             analyzeBtn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 분석 중...';
             
-            // 분석 시작 시 브라우저 옵션은 파이어폭스로 고정
-            const browser = 'firefox';
+            // 분석 시작 시 가이드는 일단 숨김 (성공 시 숨김 유지, 실패 시/재시도 시에만 노출)
+            let browser = document.getElementById('browser_cookies').value;
             
-            if (browser === 'firefox') {
+            if (browser === 'none') {
                 step2.style.display = 'none';
                 step3.style.display = 'none';
             }
@@ -623,29 +624,22 @@
             const guideArea = document.getElementById('cookie_guide_area');
             const isAutoResume = new URLSearchParams(window.location.search).get('auto') === 'true';
             
-            // 매개변수로 전달된 브라우저가 '문자열'인 경우에만 사용 (이벤트 객체 유입 방지)
-            let actualBrowser = (typeof forceBrowser === 'string' ? forceBrowser : null) || (isAutoResume ? 'firefox' : 'none');
-
-            // 분석 시작 시 URL의 auto 파라미터는 즉시 제거하여 이후 새로고침 시 무한 루프 방지
-            if (isAutoResume) {
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, '', newUrl);
+            // 자동 재시작이 아니고 가이드가 보이지 않는 상태(초기 클릭)라면 브라우저를 'none'으로 강제
+            if (!isAutoResume && guideArea.style.display === 'none') {
+                document.getElementById('browser_cookies').value = 'none';
+                browser = 'none';
             }
 
             if (guideArea) guideArea.style.display = 'none';
 
             try {
-                const res = await fetch(`${BRIDGE_URL}/info?url=${encodeURIComponent(url)}&browser=${actualBrowser}`);
+                const res = await fetch(`${BRIDGE_URL}/info?url=${encodeURIComponent(url)}&browser=${browser}`);
                 const data = await res.json();
                 if (data.error) {
                     const err = new Error(data.error);
                     err.details = data.details;
                     throw err;
                 }
-
-                // 분석 성공 즉시 브라우저 정보 저장 (지연 시간 이전에 확보)
-                lastActualBrowser = actualBrowser;
-                console.log(`[분석 성공] 사용된 브라우저: ${lastActualBrowser}`);
 
                 // 썸네일 로딩 감지 (캐시 방지 위해 속도보다 정확성 우선)
                 const thumbnailLoaded = new Promise((resolve) => {
@@ -761,8 +755,7 @@
         }
 
         function startDownload() {
-            const browser = lastActualBrowser;
-            console.log(`[다운로드 시작] 전송될 브라우저 쿠키: ${browser}`);
+            const browser = document.getElementById('browser_cookies').value;
             
             // UI 초기화: 진행 상태창과 로그창을 보여줍니다.
             step3.style.display = 'block';
@@ -777,7 +770,6 @@
 
             eventSource.onmessage = (event) => {
                 const data = event.data;
-                console.log('[에이전트 로그]', data); // 모든 로그 콘솔 출력
                 
                 if (data.includes('[DONE]')) {
                     eventSource.close();
@@ -793,7 +785,7 @@
                         confirmButtonColor: '#3ea6ff'
                     }).then((result) => {
                         if (result.isConfirmed) fetch(`${BRIDGE_URL}/open-folder`);
-                        window.location.href = window.location.pathname; // URL 파라미터 없이 초기화
+                        location.reload(); // 초기 상태로 복구
                     });
                     return;
                 }
@@ -809,19 +801,19 @@
                                 <b>해결 방법:</b><br>
                                 1. 브라우저(크롬/엣지 등)에서 유튜브에 로그인합니다.<br>
                                 2. 성인 인증 절차를 완료합니다.<br>
-                                3. 현재 페이지 설정에서 파이어폭스(Firefox)를 사용하도록 안내를 따라주세요.<br>
-                                <span style="color: #ff0000; font-weight: 800;">* 주의: 브라우저가 켜져 있으면 쿠키를 못 읽을 수 있으니, 파이어폭스를 완전히 끄고 재시도해 보세요!</span>
+                                3. 현재 페이지 설정에서 해당 브라우저(Whale 등)를 선택하세요.<br>
+                                <span style="color: #ff0000; font-weight: 800;">* 주의: 브라우저가 켜져 있으면 쿠키를 못 읽을 수 있으니, 선택한 브라우저를 끄고 재시도해 보세요!</span>
                             </div>
                         `,
                         icon: 'warning',
                         confirmButtonText: '확인'
-                    }).then(() => window.location.href = window.location.pathname);
+                    }).then(() => location.reload());
                     return;
                 }
 
                 if (data.includes('[ERROR]')) {
                     eventSource.close();
-                    Swal.fire('오류 발생', data, 'error').then(() => window.location.href = window.location.pathname);
+                    Swal.fire('오류 발생', data, 'error').then(() => location.reload());
                     return;
                 }
 
@@ -870,10 +862,16 @@
             else if (ua.includes('firefox')) detectedBrowser = 'firefox';
             
             console.log('감지된 브라우저:', detectedBrowser);
+            
+            // 드롭다운 기본값은 'none'(로그인 안 함)으로 유지
+            // 감지된 브라우저는 나중에 연령 제한 발생 시에만 추천용으로 사용
+            const select = document.getElementById('browser_cookies');
+            if (select) select.value = 'none';
         }
 
         async function openAuthBrowser() {
-            const browser = 'firefox';
+            const browser = document.getElementById('browser_cookies').value;
+            if (browser === 'none') return Swal.fire('알림', '인증할 브라우저를 선택해 주세요.', 'info');
             
             const url = urlInput.value.trim();
             if (!url) return;
@@ -883,6 +881,7 @@
                 await fetch(`${BRIDGE_URL}/reopen-browser?browser=${browser}&url=${encodeURIComponent(url)}`);
                 
                 document.getElementById('auth_waiting_msg').style.display = 'block';
+                document.getElementById('current_auth_browser_name').innerText = browser.toUpperCase();
                 
                 const btn = document.getElementById('btn_open_auth');
                 btn.disabled = true;
@@ -902,17 +901,22 @@
                     const data = await res.json();
                     
                     if (!data.running) {
-                        // 브라우저가 닫혔음! 현재 창에서 즉시 분석 재개
+                        // 브라우저가 닫혔음! 자동으로 재시작 요청
+                        // 현재 페이지의 URL을 다시 열도록 에이전트에게 요청
+                        const currentUrl = window.location.origin + window.location.pathname;
+                        const resumeUrl = `${currentUrl}?url=${encodeURIComponent(urlInput.value.trim())}&browser=${browser}&auto=true`;
+                        
+                        // 현재 사용 중인 메인 브라우저(detectedBrowser)로 다시 엽니다.
+                        await fetch(`${BRIDGE_URL}/reopen-browser?browser=${detectedBrowser}&url=${encodeURIComponent(resumeUrl)}`);
+                        
+                        // 현재 창은 안내 메시지 표시
                         Swal.fire({
                             title: '인증 완료!',
-                            text: '쿠키를 성공적으로 캡처했습니다. 분석을 재개합니다...',
+                            html: '쿠키를 성공적으로 캡처했습니다.<br>잠시 후 작업 창이 다시 열립니다.',
                             icon: 'success',
                             showConfirmButton: false,
                             timer: 2000
                         });
-                        
-                        // 현재 페이지에서 분석 함수 직접 호출 (파이어폭스 쿠키 사용 강제)
-                        analyzeVideo('firefox');
                         return;
                     }
                     setTimeout(check, 1000);
@@ -933,9 +937,12 @@
                     urlInput.value = url;
                     // 가이드 영역을 보이게 해서 유저가 무엇이 진행되는지 알게 함
                     document.getElementById('cookie_guide_area').style.display = 'block';
-                    setTimeout(() => {
-                        analyzeVideo();
-                    }, 500);
+                    if (browser) {
+                        setTimeout(() => {
+                            document.getElementById('browser_cookies').value = browser;
+                            analyzeVideo();
+                        }, 500);
+                    }
                 }
             }
         }

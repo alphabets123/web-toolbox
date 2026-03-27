@@ -1,4 +1,4 @@
-const VERSION = 'v20260327-020';
+const VERSION = 'v20260327-023';
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -324,7 +324,11 @@ const server = http.createServer(async (req, res) => {
 
                 // 연령 제한 에러 감지
                 if (details.includes('confirm your age') || details.includes('age-restricted')) {
-                    errorMsg = '[ERROR_AGE_RESTRICTED]';
+                    if (parsedUrl.searchParams.get('browser') === 'firefox') {
+                        errorMsg = '[ERROR_FIREFOX_NOT_LOGGED_IN]';
+                    } else {
+                        errorMsg = '[ERROR_AGE_RESTRICTED]';
+                    }
                 }
                 // 쿠키 잠금 에러 감지 (브라우저가 열려 있을 때)
                 else if (details.includes('Could not copy') && details.includes('cookie database')) {

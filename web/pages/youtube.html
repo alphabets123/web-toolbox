@@ -328,6 +328,9 @@
                 <div class="container" style="text-align: center;">
                     <h1>유튜브 다운로드</h1>
                     <p class="subtitle">PC에서만 동작하며 에이전트 다운 및 실행이 필요합니다</p>
+                    <p style="font-size: 0.8rem; color: #64748b; margin-top: -0.8rem; margin-bottom: 1.5rem; font-weight: 600;">
+                        ※ 연령 제한 영상을 받으려면 <b>성인 인증된 계정 로그인</b>과 <b>파이어폭스 브라우저 설치</b>가 필요할 수 있습니다.
+                    </p>
 
                     <div class="downloader-box">
                         <div class="bridge-status">
@@ -376,6 +379,9 @@
                                 <div id="auth_waiting_msg" style="display: none; margin-top: 15px; padding: 15px; background: #fff; border-radius: 12px; border: 2px solid #bae6fd; font-size: 0.95rem; color: #0369a1; font-weight: 800; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
                                     ⏳ <b>파이어폭스</b>에서 로그인 확인 후, <b style="color: #e11d48; text-decoration: underline;">창을 완전히 닫아주세요!</b><br>
                                     <span style="font-size: 0.8rem; color: #0ea5e9; font-weight: 600;">(닫히는 순간 분석 결과를 현재 페이지에 즉시 표시합니다)</span>
+                                </div>
+                                <div style="margin-top: 20px; font-size: 0.8rem; color: #94a3b8; font-weight: 600; border-top: 1px dashed #bae6fd; padding-top: 15px;">
+                                    💡 문제가 지속되면 <b>페이지를 새로고침(F5)</b> 하거나 사이트를 다시 접속해 주세요.
                                 </div>
                             </div>
                         </div>
@@ -596,9 +602,19 @@
         }
 
         function enableAnalyzeUI() {
-            analyzeBtn.innerHTML = '분석하기';
             analyzeBtn.disabled = false;
-            analyzeBtn.onclick = analyzeVideo;
+            analyzeBtn.innerHTML = '<i class="fas fa-search"></i> 분석하기';
+            urlInput.disabled = false;
+            
+            // 파이어폭스 대기 UI도 원래대로 복구 (고착 방지)
+            const authBtn = document.getElementById('btn_open_auth');
+            const authWait = document.getElementById('auth_waiting_msg');
+            if (authBtn) {
+                authBtn.style.display = 'flex';
+                authBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> 인증 브라우저(Firefox)로 영상 열기';
+                authBtn.disabled = false;
+            }
+            if (authWait) authWait.style.display = 'none';
         }
 
         async function analyzeVideo(forceBrowser = null) {
@@ -680,20 +696,36 @@
                 enableAnalyzeUI();
 
             } catch (e) {
-                // 분석 실패 시 입력창 다시 활성화
+                // 1차 실패 시 연령 제한인 경우 파이어폭스로 자동 재시도 (최초 1회)
+                if (actualBrowser === 'none' && (e.message === '[ERROR_AGE_RESTRICTED]' || e.message === '[ERROR_COOKIE_LOCKED]' || e.message.includes('DPAPI'))) {
+                    console.log('[재시도] 연령 제한 감지됨. 파이어폭스 쿠키로 자동 재시도합니다...');
+                    return analyzeVideo('firefox');
+                }
+                
+                // 진짜 실패 시 입력창 다시 활성화
                 enableAnalyzeUI();
 
-                if (e.message === '[ERROR_AGE_RESTRICTED]' || e.message === '[ERROR_BROWSER_LOCKED]' || e.message.includes('DPAPI') || e.details?.includes('DPAPI')) {
+                if (e.message === '[ERROR_AGE_RESTRICTED]' || e.message === '[ERROR_FIREFOX_NOT_LOGGED_IN]' || e.message === '[ERROR_BROWSER_LOCKED]' || e.message.includes('DPAPI') || e.details?.includes('DPAPI')) {
                     const guideArea = document.getElementById('cookie_guide_area');
-                    guideArea.style.display = 'block'; // 가이드 노출
+                    if (guideArea) guideArea.style.display = 'block'; // 가이드 무조건 노출
                     
-                    Swal.fire({
-                        title: '인증 가이드 확인',
-                        html: `이 영상은 <b>성인 인증</b>이 필요하거나 브라우저 보안 정책의 영향을 받습니다.<br><br>가장 확실한 해결을 위해 아래 추가된 <b>파이어폭스(Firefox) 인증 가이드</b>를 따라주세요.`,
-                        icon: 'info',
-                        confirmButtonText: '가이드 확인',
-                        confirmButtonColor: '#0284c7'
-                    });
+                    if (e.message === '[ERROR_FIREFOX_NOT_LOGGED_IN]') {
+                        Swal.fire({
+                            title: '로그인 필요',
+                            html: `파이어폭스 브라우저에서 <b>성인 인증된 유튜브 계정 로그인</b>이 되어 있지 않습니다.<br><br>파이어폭스를 실행하여 로그인을 완료한 후, 창을 닫고 다시 시도해 주세요.`,
+                            icon: 'warning',
+                            confirmButtonText: '확인',
+                            confirmButtonColor: '#ff7114'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: '인증 가이드 확인',
+                            html: `이 영상은 <b>성인 인증</b>이 필요하거나 브라우저 보안 정책의 영향을 받습니다.<br><br>가장 확실한 해결을 위해 아래 추가된 <b>파이어폭스(Firefox) 인증 가이드</b>를 따라주세요.`,
+                            icon: 'info',
+                            confirmButtonText: '가이드 확인',
+                            confirmButtonColor: '#0284c7'
+                        });
+                    }
                 } else {
                     const errorMsg = e.message || '영상 정보를 가져오지 못했습니다.';
                     const details = e.details ? `<br><small style="color: #666; font-size: 0.7rem;">${e.details}</small>` : '';

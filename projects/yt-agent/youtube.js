@@ -1,4 +1,4 @@
-const VERSION = 'v20260327-023';
+const VERSION = 'v20260328-001';
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
@@ -373,6 +373,7 @@ const server = http.createServer(async (req, res) => {
         const downloadsPath = getDownloadsFolder();
         let args = [
             '--newline', '--progress',
+            '--no-playlist', // 재생 목록이더라도 해당 영상 하나만 받음
             '--ffmpeg-location', BIN_DIR,
             '-o', path.join(downloadsPath, '%(title)s.%(ext)s'),
         ];

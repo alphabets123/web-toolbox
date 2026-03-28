@@ -109,6 +109,7 @@ namespace SnapTaskStarter
             string appPath = Path.Combine(APPS_DIR, info.SourceFile);
 
             Console.WriteLine(string.Format("[!] '{0}' 코드를 업데이트 중...", targetApp));
+            // 타임스탬프 추가로 깃허브 Raw 캐시 무시 (항상 최신 코드 보장)
             string cacheBreakerUrl = info.Url + "?t=" + DateTime.Now.Ticks.ToString();
             if (!DownloadFile(cacheBreakerUrl, appPath)) return;
 

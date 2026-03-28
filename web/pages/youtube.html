@@ -490,8 +490,31 @@
                 const data = await res.json();
                 
                 const isReady = data.ytdlp && data.ffmpeg;
+                const isOldVersion = data.version && data.version.startsWith('v20260327'); // 어제 날짜 버전 감지
+                
                 statusDot.className = isReady ? 'status-dot online' : 'status-dot busy';
-                statusText.innerText = isReady ? '에이전트 준비 완료' : '시스템 구성 요소 점검 및 설치 중...';
+                
+                let statusHtml = isReady ? '에이전트 준비 완료' : '시스템 구성 요소 점검 및 설치 중...';
+                if (isReady && isOldVersion) {
+                    statusHtml += ` <span style="color: #f59e0b; font-size: 0.75rem; font-weight: 800; animation: blink 1s infinite;">(🔄 업데이트 지연됨)</span>`;
+                }
+                statusText.innerHTML = statusHtml;
+                
+                // 구버전(v20260327 등) 감지 시 안내 팝업 (1회성)
+                if (isOldVersion && !localStorage.getItem('update_alert_shown')) {
+                    localStorage.setItem('update_alert_shown', 'true');
+                    Swal.fire({
+                        title: '스타터 업데이트 권장',
+                        html: `현재 <b>구버전 스타터</b>를 사용 중이라 업데이트가 지연되고 있습니다.<br><br>새 스타터를 한 번만 더 내려받으시면, 앞으로는 <b>기다림 없이 즉시 업데이트</b>가 진행됩니다!<br><br><small style="color: #666;">(기다리시면 5~10분 내로 자동 업데이트되나, 즉시 적용을 위해 재설치를 권장합니다.)</small>`,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: '최신 스타터 다운로드',
+                        cancelButtonText: '나중에 하기',
+                        confirmButtonColor: '#3b82f6'
+                    }).then((result) => {
+                        if (result.isConfirmed) showAgentGuide();
+                    });
+                }
                 
                 updateAnalyzeButton(isReady);
             } catch (e) {

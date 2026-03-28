@@ -19,6 +19,31 @@ const FFMPEG_PATH = path.join(BIN_DIR, 'ffmpeg.exe');
 if (!fs.existsSync(SNAP_TASK_DIR)) fs.mkdirSync(SNAP_TASK_DIR, { recursive: true });
 if (!fs.existsSync(BIN_DIR)) fs.mkdirSync(BIN_DIR, { recursive: true });
 
+// --- 스타터 자가 치유/업데이트 로직 ---
+async function ensureLatestStarter() {
+    const starterPath = path.join(SNAP_TASK_DIR, 'st-starter.exe');
+    const remoteStarterUrl = 'https://raw.githubusercontent.com/alphabets123/web-toolbox/main/dist/st-starter.exe';
+    
+    // 스타터는 실행 후 1.5초 내에 종료되므로, 3초 대기 후 안전하게 교체 시도
+    setTimeout(async () => {
+        try {
+            // 타임스탬프를 붙여 깃허브 캐시를 무시하고 최신 스타터를 내려받음
+            const tempPath = starterPath + '.next';
+            await downloadFile(remoteStarterUrl + '?t=' + Date.now(), tempPath);
+            
+            if (fs.existsSync(tempPath)) {
+                // 기존 스타터가 실행 중이지 않을 때(이미 종료됨) 교체
+                fs.copyFileSync(tempPath, starterPath);
+                fs.unlinkSync(tempPath);
+                console.log('   [시스템] 스타터가 최신 버전으로 업데이트되었습니다.');
+            }
+        } catch (e) {
+            // 실패하더라도 주 기능(다운로드)에는 지장 없도록 함
+            console.error('   [시스템] 스타터 업데이트 확인 중 건너뜀:', e.message);
+        }
+    }, 3000);
+}
+
 
 function getDownloadsFolder() {
     const start = Date.now();
@@ -232,6 +257,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/status') {
         const status = {
+            version: VERSION,
             ytdlp: fs.existsSync(YTDLP_PATH) && fs.statSync(YTDLP_PATH).size > 1000000,
             ffmpeg: fs.existsSync(FFMPEG_PATH) && fs.statSync(FFMPEG_PATH).size > 10000000,
             platform: process.platform
@@ -488,6 +514,7 @@ checkAndSetupBinaries().then(() => {
         console.log('   유튜브 다운로드가 완료되면 이 창을 닫으셔도 됩니다.');
         
         startIdleTimer(); // 서버가 정상적으로 열린 뒤에 타이머 시작!
+        ensureLatestStarter(); // 스타터 최신화 (백그라운드)
     });
 });
 

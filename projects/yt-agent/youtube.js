@@ -29,9 +29,12 @@ async function ensureLatestStarter() {
     // 스타터는 실행 후 1.5초 내에 종료되므로, 3초 대기 후 안전하게 교체 시도
     setTimeout(async () => {
         try {
-            // 1. 온라인 버전 확인 (캐시 방지 타임스탬프)
+            const localVersion = fs.existsSync(versionPath) ? fs.readFileSync(versionPath, 'utf8').trim() : '0';
+            console.log(`   [시스템] 스타터 버전 정보: ${localVersion}`);
+
+            // 1. 온라인 버전 확인 (캐시 방지 타임스탬프, 진행률 숨김)
             const tmpVersionPath = versionPath + '.tmp';
-            await downloadFile(remoteVersionUrl + '?t=' + Date.now(), tmpVersionPath);
+            await downloadFile(remoteVersionUrl + '?t=' + Date.now(), tmpVersionPath, false);
             if (!fs.existsSync(tmpVersionPath)) return;
             
             const remoteVersion = fs.readFileSync(tmpVersionPath, 'utf8').trim();
@@ -80,7 +83,7 @@ function getDownloadsFolder() {
 /**
  * 리다이렉트를 지원하는 다운로드 함수
  */
-function downloadFile(url, dest) {
+function downloadFile(url, dest, showProgress = true) {
     return new Promise((resolve, reject) => {
         const request = (currentUrl) => {
             const protocol = currentUrl.startsWith('https') ? https : http;
@@ -107,6 +110,9 @@ function downloadFile(url, dest) {
                 
                 response.on('data', (chunk) => {
                     downloadedSize += chunk.length;
+                    
+                    if (!showProgress) return; // 진행률 표시 여부 체크
+                    
                     const mbDownloaded = (downloadedSize / 1024 / 1024).toFixed(1);
 
                     if (totalSize && totalSize > 0) {

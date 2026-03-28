@@ -38,7 +38,6 @@ async function ensureLatestStarter() {
             if (!fs.existsSync(tmpVersionPath)) return;
             
             const remoteVersion = fs.readFileSync(tmpVersionPath, 'utf8').trim();
-            const localVersion = fs.existsSync(versionPath) ? fs.readFileSync(versionPath, 'utf8').trim() : '0';
             
             // 2. 버전이 다를 때만 실제 스타터 다운로드 진행
             if (remoteVersion !== localVersion) {

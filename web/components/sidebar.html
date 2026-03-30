@@ -1,0 +1,57 @@
+<style>
+  .sidebar-open { transform: translateX(0) !important; visibility: visible !important; }
+  @media (min-width: 1024px) {
+    .desktop-collapsed { margin-left: -288px !important; }
+  }
+</style>
+
+<!-- Sidebar Overlay -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-[60] opacity-0 invisible lg:hidden" style="backdrop-filter: blur(4px); transition: opacity 0.3s ease;"></div>
+
+<!-- Sidebar -->
+<aside id="sidebar" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);" class="fixed lg:static inset-y-0 left-0 w-72 flex flex-col bg-white border-r border-outline-variant/30 z-[70] p-6 -translate-x-full lg:translate-x-0">
+    <div class="flex items-center mb-10">
+        <a href="/" class="flex items-center gap-3 active:scale-95 transition-all">
+            <div class="flex items-center">
+                <span class="material-symbols-outlined text-primary text-3xl">grid_view</span>
+                <span class="text-2xl font-black bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent font-headline tracking-tight ml-2">SnapTask</span>
+                <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black ml-2 -translate-y-2">딸깍 작업</span>
+            </div>
+        </a>
+    </div>
+    
+    <nav class="flex-1 space-y-2">
+        <a href="/web/pages/bg-remove.html" class="nav-link flex items-center gap-3 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface-container transition-all">
+            <span class="material-symbols-outlined shrink-0">content_cut</span>
+            <span>배경 제거</span>
+        </a>
+        <a href="/web/pages/video-edit.html" class="nav-link flex items-center gap-3 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface-container transition-all">
+            <span class="material-symbols-outlined shrink-0">movie</span>
+            <span>동영상 컷편집</span>
+        </a>
+        <a href="/web/pages/youtube.html" class="nav-link flex items-center gap-3 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface-container transition-all">
+            <span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 1;">download</span>
+            <span>유튜브 다운로드</span>
+        </a>
+    </nav>
+    
+    <div class="mt-auto pt-6 border-t border-outline-variant/30">
+        <p class="text-[10px] text-on-surface-variant text-center">&copy; 2026 SnapTask. All rights reserved.</p>
+    </div>
+</aside>
+
+<!-- Bottom Nav Bar (Mobile only) -->
+<nav id="mobileNav" class="lg:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 backdrop-blur-xl rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] border-t border-outline-variant/10">
+    <a class="mobile-nav-link flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all duration-300" href="/">
+        <span class="material-symbols-outlined text-2xl mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+        <span class="font-headline text-[10px] font-black tracking-wider uppercase">Home</span>
+    </a>
+    <a class="mobile-nav-link flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all duration-300" href="/web/pages/bg-remove.html">
+        <span class="material-symbols-outlined text-2xl mb-1">content_cut</span>
+        <span class="font-headline text-[10px] font-black tracking-wider uppercase">Tools</span>
+    </a>
+    <a class="mobile-nav-link flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:text-primary transition-all duration-300" href="/web/pages/youtube.html">
+        <span class="material-symbols-outlined text-2xl mb-1">download</span>
+        <span class="font-headline text-[10px] font-black tracking-wider uppercase">Down</span>
+    </a>
+</nav>

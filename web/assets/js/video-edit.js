@@ -171,14 +171,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.showAgentGuide = () => {
+        const isLocal = engineStatus.textContent.includes('Local');
         Swal.fire({
-            title: '엔진 상태 안내',
+            title: isLocal ? '로컬 가속 엔진 활성화' : '웹 엔진(Web Engine) 가동 중',
             html: `
                 <div style="text-align: left; line-height: 1.6; font-size: 0.9rem;">
-                    현재 <b>브라우저 엔진(Web Engine)</b>으로 작동 중입니다.<br>
-                    더 빠른 대용량 파일 처리를 원하시면 로컬 에이전트를 실행하세요.<br><br>
-                    1. <b>start-agent.bat</b> 파일을 실행하세요.<br>
-                    2. 실행 즉시 <b>Local Engine Ready</b>로 전환됩니다.
+                    ${isLocal ? 
+                    '회원님의 PC 자원을 활용하여 <b>초고속/대용량 렌더링</b>을 수행하고 있습니다.<br>웹 브라우저의 한계를 넘어선 쾌적한 작업이 가능합니다.' : 
+                    '현재 별도의 프로그램 설치 없이 <b>웹 브라우저 내부</b>에서 안전하게 동영상을 처리하고 있습니다.<br><br>💡 영상은 서버로 전송되지 않으며, 사용자 PC 안에서 100% 비공개 처리됩니다.'}
                 </div>
             `,
             icon: 'info',

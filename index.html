@@ -1,117 +1,219 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html class="light" lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="web/assets/js/coi-serviceworker.js"></script>
-    <title>Snap-Task - 빠르고 단순한 업무 도구</title>
-    <!-- 딸깍(위트있는) 파비콘 (🖱️ 마우스) 추가 -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="web/assets/css/style.css">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>SnapTask Dashboard</title>
+    <!-- COI Service Worker for SharedArrayBuffer support (ffmpeg/bg-removal) -->
+    <!-- <script src="web/assets/js/coi-serviceworker.js"></script> -->
+    <!-- Localized Tailwind CSS to bypass COEP block and speed up load -->
+    <script src="web/assets/js/tailwindcss.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="preload" href="/web/components/sidebar.html" as="fetch" crossorigin="anonymous">
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary": "#ffffff",
+              "primary-fixed-dim": "#c0c1ff",
+              "surface-container-low": "#f2f4f6",
+              "surface-bright": "#f7f9fb",
+              "on-surface-variant": "#464554",
+              "secondary": "#a855f7",
+              "on-tertiary-container": "#fffbff",
+              "on-secondary-container": "#fffbff",
+              "error-container": "#ffdad6",
+              "primary-fixed": "#e1e0ff",
+              "primary-container": "#6063ee",
+              "on-surface": "#191c1e",
+              "on-primary-container": "#fffbff",
+              "surface": "#f7f9fb",
+              "on-secondary-fixed": "#2c0051",
+              "error": "#ba1a1a",
+              "primary": "#6366f1",
+              "secondary-fixed-dim": "#ddb7ff",
+              "secondary-fixed": "#f0dbff",
+              "on-error": "#ffffff",
+              "on-secondary": "#ffffff",
+              "on-primary-fixed": "#07006c",
+              "tertiary": "#4f46e5",
+              "surface-container-high": "#e6e8ea",
+              "inverse-surface": "#2d3133",
+              "inverse-primary": "#c0c1ff",
+              "surface-container-highest": "#e0e3e5",
+              "background": "#f8fafc",
+              "surface-tint": "#494bd6",
+              "on-primary-fixed-variant": "#2f2ebe",
+              "on-tertiary-fixed-variant": "#3323cc",
+              "on-tertiary-fixed": "#0f0069",
+              "on-secondary-fixed-variant": "#6900b3",
+              "on-error-container": "#93000a",
+              "inverse-on-surface": "#eff1f3",
+              "secondary-container": "#9c48ea",
+              "outline": "#767586",
+              "tertiary-container": "#645efb",
+              "outline-variant": "#c7c4d7",
+              "surface-container": "#eceef0",
+              "surface-dim": "#d8dadc",
+              "surface-variant": "#e0e3e5",
+              "tertiary-fixed-dim": "#c3c0ff",
+              "on-background": "#191c1e",
+              "on-tertiary": "#ffffff",
+              "tertiary-fixed": "#e2dfff",
+              "surface-container-lowest": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
     <style>
-        .badge { display: inline-block; padding: 0.4rem 0.8rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 999px; color: var(--accent-color); font-size: 0.8rem; font-weight: 700; margin-bottom: 1.2rem; text-transform: uppercase; }
-        h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 0.8rem; color: var(--text-color); line-height: 1.2; }
-        p.desc { font-size: 1.15rem; color: var(--text-muted); margin-bottom: 2.5rem; font-weight: 500; }
-        
-        .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 0; text-align: left; }
-        .tool-card { background: #ffffff; border: 1px solid var(--glass-border); border-radius: 1rem; padding: 1.5rem; text-decoration: none; color: var(--text-color); transition: all 0.3s ease; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .tool-card:hover { transform: translateY(-5px); background: #ffffff; border-color: var(--accent-color); box-shadow: 0 10px 20px rgba(0,0,0,0.06); }
-        .tool-card.disabled { opacity: 0.5; pointer-events: none; background: #f8fafc; }
-        .tool-card .icon { font-size: 2.2rem; margin-bottom: 0.4rem; }
-        .tool-card h3 { font-size: 1.15rem; font-weight: 700; color: var(--text-color); }
-        .tool-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0; font-weight: 500; }
+      .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      .brand-gradient { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
+      body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; -webkit-font-smoothing: antialiased; }
+      h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; }
+      /* Sidebar Toggle Logic */
+      .sidebar-open { transform: translateX(0) !important; visibility: visible !important; }
+      aside { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+      #sidebarOverlay { backdrop-filter: blur(4px); transition: opacity 0.3s ease; }
+      
+      @media (min-width: 1024px) {
+        body.sidebar-loading::before {
+          content: "";
+          display: block;
+          width: 288px; /* w-72 */
+          flex-shrink: 0;
+        }
+      }
     </style>
-    <script src="coi-serviceworker.js"></script>
 </head>
-<body>
-    <div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1;">
-        <div class="bg-blob"></div>
-        <div class="bg-blob-2"></div>
-    </div>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <div class="sidebar" id="sidebar">
-        <div style="margin-bottom: 2.5rem;">
-            <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
-            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
-                </svg>
-                딸깍 작업
-            </div>
-        </div>
-        <nav class="nav-menu">
-            <a href="web/pages/bg-remove.html" class="nav-item">✂️ 배경 제거</a>
-            <a href="web/pages/video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
-            <a href="web/pages/youtube.html" class="nav-item">⬇️ 유튜브 다운</a>
-        </nav>
-        
-        <!-- 하단 광고 배너 뷰 -->
-        <div class="sidebar-footer">
-            &copy; 2026 Snap-Task.<br>
-        </div>
-    </div>
+<body class="sidebar-loading min-h-screen bg-background flex flex-col lg:flex-row">
     
-    <div class="main-content">
-        <!-- Top Header Bar (Gradient Colors 적용) -->
-        <header class="top-bar" style="--page-theme-gradient: linear-gradient(135deg, #4f46e5, #4f46e5, #a855f7);">
-            <button class="menu-toggle" id="menuToggle">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-            </button>
-            <span class="top-bar-title">🏠 대시보드</span>
+    <!-- Content Area -->
+    <div class="flex-1 lg:ml-0 flex flex-col min-h-screen">
+        <!-- TopAppBar -->
+        <header class="sticky top-0 left-0 w-full flex justify-between items-center px-6 py-4 bg-white/70 backdrop-blur-xl z-40 lg:bg-transparent border-b border-outline-variant/10 lg:border-none">
+            <div class="flex items-center gap-3">
+                <!-- Hamburger Menu Toggle -->
+                <button id="menuToggle" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container transition-all">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="lg:hidden flex items-center">
+                    <span class="material-symbols-outlined text-primary text-2xl mr-2">grid_view</span>
+                    <span class="text-xl font-black bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent font-headline tracking-tight">SnapTask</span>
+                    <span class="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black ml-2 -translate-y-1.5">딸깍 작업</span>
+                </div>
+            </div>
+            
+            <!-- Title Bar style header -->
+            <div class="hidden lg:flex items-center gap-2 px-4 py-1.5 bg-surface-container rounded-full border border-outline-variant/20">
+                <span class="material-symbols-outlined text-primary text-sm">bolt</span>
+                <span class="text-[11px] font-black text-on-surface-variant uppercase tracking-widest">Snap-Task Toolbox V2</span>
+            </div>
         </header>
 
-        <div class="main-content-inner">
-            <!-- 콘텐츠 및 우측 광고 레이아웃 -->
-            <div class="content-wrapper">
-                <div class="container">
-                    <div class="badge">Cloudflare + Web ML</div>
-                    <h1>Snap-Task Dashboard</h1>
-                    <p class="desc">설치나 서버 전송 필요 없이, 내 PC 자체 AI로 <strong>딸깍 한 번에</strong> 마무리하는 필수 도구.</p>
-                    
-                    <div class="tool-grid">
-                        <a href="web/pages/bg-remove.html" class="tool-card">
-                            <div class="icon">✂️</div>
-                            <h3>배경 제거 (누끼 따기)</h3>
-                            <p>이미지 크기 무제한, 무손실 고화질 다운로드. 완벽한 프라이버시.</p>
-                            <p style="margin-top: 0.5rem; color: #d946ef; font-weight: 700; font-size: 0.85rem;">💡 인물/사물이 명확한 사진에 최적화</p>
-                        </a>
-                        
-                        <a href="web/pages/video-edit.html" class="tool-card">
-                            <div class="icon">🎬</div>
-                            <h3>동영상 구간 자르기</h3>
-                            <p>내장된 WebAssembly 엔진을 통해 브라우저에서 직접 빠른 컷편집.</p>
-                        </a>
-                        
-                        <a href="web/pages/youtube.html" class="tool-card">
-                            <div class="icon">⬇️</div>
-                            <h3>유튜브 영상 다운</h3>
-                            <p>복잡한 설치나 광고 없이 내 PC 자원을 활용한 안전한 원클릭 다운로드.</p>
-                        </a>
+        <main class="flex-1 px-6 py-8 max-w-6xl mx-auto w-full pb-32 lg:pb-10">
+            <!-- Hero Section -->
+            <section class="mb-12 text-left">
+                <div class="p-1 px-4 bg-primary-fixed/50 inline-block rounded-full mb-6">
+                    <p class="text-[10px] font-black text-primary tracking-widest uppercase">Intelligent Local Tools</p>
+                </div>
+                <div class="flex items-center mb-4 gap-3">
+                    <h1 class="text-4xl lg:text-5xl font-extrabold text-on-surface tracking-tight leading-tight">
+                        Snap-Task <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Toolbox</span>
+                    </h1>
+                    <span class="hidden sm:inline-block text-[12px] bg-primary text-white px-3 py-1 rounded-full font-black -translate-y-3 shadow-sm whitespace-nowrap">딸깍 작업</span>
+                </div>
+                <p class="text-on-surface-variant text-base lg:text-lg leading-relaxed font-medium max-w-2xl opacity-80">
+                    웹 기술과 전용 브라우저 기반 에이전트 연동으로 내 PC 시스템 리소스를 활용하는 강력한 고성능 작업 모음입니다.<br>
+                    <span class="text-[13px] font-bold text-on-surface-variant/60 mt-2 inline-block">※ 원활한 동작을 위해 PC 환경에 최적화되어 있으며 모바일에서는 기능이 제한될 수 있습니다.</span>
+                </p>
+            </section>
+
+            <!-- Tools Grid (Balanced 1:1:1) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                
+                <!-- Background Removal -->
+                <div class="group relative overflow-hidden rounded-[32px] bg-white p-8 shadow-[0_20px_40px_rgba(0,0,0,0.03)] hover:shadow-2xl transition-all duration-500 border border-outline-variant/10 flex flex-col h-full">
+                    <div class="w-14 h-14 rounded-2xl brand-gradient flex items-center justify-center mb-8 shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-white text-3xl">content_cut</span>
                     </div>
+                    <h3 class="text-xl font-bold text-on-surface mb-3">배경 제거 (누끼 따기)</h3>
+                    <p class="text-on-surface-variant text-sm mb-8 leading-relaxed font-medium flex-1">
+                        복잡한 배경도 AI가 정교하게 인식하여 클릭 한 번으로 투명하게 제거합니다.
+                    </p>
+                    <a href="web/pages/bg-remove.html" class="inline-flex items-center justify-center py-4 bg-surface-container rounded-2xl text-primary font-bold text-sm hover:brand-gradient hover:text-white transition-all">
+                        지금 시작하기 <span class="material-symbols-outlined ml-2 text-lg">arrow_forward</span>
+                    </a>
                 </div>
 
-                <!-- 우측 배너광고 영역 (추후 광고 추가를 위해 주석 처리) -->
-                <!-- <div class="ad-side-banner">Ad Space<br>(우측 본문 옆)</div> -->
+                <!-- Video Clipping -->
+                <div class="group relative overflow-hidden rounded-[32px] bg-white p-8 shadow-[0_20px_40px_rgba(0,0,0,0.03)] hover:shadow-2xl transition-all duration-500 border border-outline-variant/10 flex flex-col h-full">
+                    <div class="w-14 h-14 rounded-2xl bg-primary-fixed flex items-center justify-center mb-8 text-primary">
+                        <span class="material-symbols-outlined text-3xl font-bold">movie</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-on-surface mb-3">동영상 컷편집</h3>
+                    <p class="text-on-surface-variant text-sm mb-8 leading-relaxed font-medium flex-1">
+                        필요한 구간만 빠르게 추출하세요. 브라우저 내장 WASM 엔진으로 즉시 실행됩니다.
+                    </p>
+                    <a href="web/pages/video-edit.html" class="inline-flex items-center justify-center py-4 bg-surface-container rounded-2xl text-primary font-bold text-sm hover:brand-gradient hover:text-white transition-all">
+                        도구 열기 <span class="material-symbols-outlined ml-2 text-lg">arrow_forward</span>
+                    </a>
+                </div>
+
+                <!-- YouTube Download -->
+                <div class="group relative overflow-hidden rounded-[32px] bg-white p-8 shadow-[0_20px_40px_rgba(0,0,0,0.03)] hover:shadow-2xl transition-all duration-500 border border-outline-variant/10 flex flex-col h-full">
+                    <div class="w-14 h-14 rounded-2xl bg-secondary-fixed flex items-center justify-center mb-8 text-secondary">
+                        <span class="material-symbols-outlined text-3xl font-bold">download</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-on-surface mb-3">유튜브 영상 다운로드</h3>
+                    <p class="text-on-surface-variant text-sm mb-8 leading-relaxed font-medium flex-1">
+                        안전하게 내 PC로 영상을 소장하세요. 로컬 연동으로 데이터 유출 걱정이 없습니다.
+                    </p>
+                    <a href="web/pages/youtube.html" class="inline-flex items-center justify-center py-4 bg-surface-container rounded-2xl text-primary font-bold text-sm hover:brand-gradient hover:text-white transition-all">
+                        링크 입력하기 <span class="material-symbols-outlined ml-2 text-lg">arrow_forward</span>
+                    </a>
+                </div>
             </div>
-        </div>
+
+            <!-- Repositioned Privacy Architecture Info -->
+            <div class="w-full group relative overflow-hidden rounded-[32px] bg-surface-container-low p-6 border border-white/50 shadow-sm flex flex-col sm:flex-row items-center gap-6 mb-12">
+                <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-green-600 shadow-inner shrink-0">
+                    <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">security</span>
+                </div>
+                <div class="text-center sm:text-left">
+                    <p class="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-1">Security Architecture</p>
+                    <p class="text-lg font-bold text-on-surface leading-tight">개인정보를 위해 설계된 100% 로컬 환경</p>
+                </div>
+                <div class="ml-auto flex items-center gap-2 text-green-600 font-bold text-sm">
+                    <span class="material-symbols-outlined text-lg">check_circle</span>
+                    <span>No Server Upload</span>
+                </div>
+            </div>
+
+            <!-- Aesthetic Visual Section (Restored as requested) -->
+            <section class="mt-12">
+                <div class="w-full h-48 lg:h-64 rounded-[40px] overflow-hidden relative shadow-2xl group">
+                    <img class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuArdUKaR8-Q8kyCFbwDasEvRx4rPYVpGRdXM7plNtqkrrQkRdhduM3T4K37PEodrPkcmcAbO-b_t0gvqEoLTH-AYJIA1J_53JijupXFJACyrVXg71pB5HLmL6anpk5Y4_6t7vf0i3dTZ8i6yLDq91NKqA4a4kaf5Fmp_VKXSrHIGSNIOTDMLTeoWxtS9gjGZKCLUV0QgBuwX2WKMRNASPNc-3KGJO1Gn6faxw4Yp5PT_bXRs6FtcEVMJQf0Vaj0VlnZaycSTHa6fC4"/>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-primary/20 to-transparent"></div>
+                    <div class="absolute bottom-6 left-8">
+                        <p class="text-white font-black text-xl lg:text-2xl tracking-tight mb-1">Create faster than ever.</p>
+                        <p class="text-white/80 font-medium text-sm lg:text-base opacity-80">Experience the power of local-first AI tools.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
-    
-    <script>
-        document.getElementById('menuToggle').addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                document.getElementById('sidebar').classList.add('open');
-                document.getElementById('sidebarOverlay').classList.add('open');
-            } else {
-                document.getElementById('sidebar').classList.toggle('collapsed');
-            }
-        });
-        document.getElementById('sidebarOverlay').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('open');
-        });
-    </script>
+
+    <!-- Layout Injector -->
+    <script src="/web/assets/js/layout.js"></script>
 </body>
 </html>

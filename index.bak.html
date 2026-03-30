@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="web/assets/js/coi-serviceworker.js"></script>
+    <title>Snap-Task - 빠르고 단순한 업무 도구</title>
+    <!-- 딸깍(위트있는) 파비콘 (🖱️ 마우스) 추가 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="web/assets/css/style.css">
+    <style>
+        .badge { display: inline-block; padding: 0.4rem 0.8rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 999px; color: var(--accent-color); font-size: 0.8rem; font-weight: 700; margin-bottom: 1.2rem; text-transform: uppercase; }
+        h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 0.8rem; color: var(--text-color); line-height: 1.2; }
+        p.desc { font-size: 1.15rem; color: var(--text-muted); margin-bottom: 2.5rem; font-weight: 500; }
+        
+        .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 0; text-align: left; }
+        .tool-card { background: #ffffff; border: 1px solid var(--glass-border); border-radius: 1rem; padding: 1.5rem; text-decoration: none; color: var(--text-color); transition: all 0.3s ease; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .tool-card:hover { transform: translateY(-5px); background: #ffffff; border-color: var(--accent-color); box-shadow: 0 10px 20px rgba(0,0,0,0.06); }
+        .tool-card.disabled { opacity: 0.5; pointer-events: none; background: #f8fafc; }
+        .tool-card .icon { font-size: 2.2rem; margin-bottom: 0.4rem; }
+        .tool-card h3 { font-size: 1.15rem; font-weight: 700; color: var(--text-color); }
+        .tool-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0; font-weight: 500; }
+    </style>
+    <script src="coi-serviceworker.js"></script>
+</head>
+<body>
+    <div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1;">
+        <div class="bg-blob"></div>
+        <div class="bg-blob-2"></div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div style="margin-bottom: 2.5rem;">
+            <a href="index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
+                </svg>
+                딸깍 작업
+            </div>
+        </div>
+        <nav class="nav-menu">
+            <a href="web/pages/bg-remove.html" class="nav-item">✂️ 배경 제거</a>
+            <a href="web/pages/video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
+            <a href="web/pages/youtube.html" class="nav-item">⬇️ 유튜브 다운</a>
+        </nav>
+        
+        <!-- 하단 광고 배너 뷰 -->
+        <div class="sidebar-footer">
+            &copy; 2026 Snap-Task.<br>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <!-- Top Header Bar (Gradient Colors 적용) -->
+        <header class="top-bar" style="--page-theme-gradient: linear-gradient(135deg, #4f46e5, #4f46e5, #a855f7);">
+            <button class="menu-toggle" id="menuToggle">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <span class="top-bar-title">🏠 대시보드</span>
+        </header>
+
+        <div class="main-content-inner">
+            <!-- 콘텐츠 및 우측 광고 레이아웃 -->
+            <div class="content-wrapper">
+                <div class="container">
+                    <div class="badge">Cloudflare + Web ML</div>
+                    <h1>Snap-Task Dashboard</h1>
+                    <p class="desc">설치나 서버 전송 필요 없이, 내 PC 자체 AI로 <strong>딸깍 한 번에</strong> 마무리하는 필수 도구.</p>
+                    
+                    <div class="tool-grid">
+                        <a href="web/pages/bg-remove.html" class="tool-card">
+                            <div class="icon">✂️</div>
+                            <h3>배경 제거 (누끼 따기)</h3>
+                            <p>이미지 크기 무제한, 무손실 고화질 다운로드. 완벽한 프라이버시.</p>
+                            <p style="margin-top: 0.5rem; color: #d946ef; font-weight: 700; font-size: 0.85rem;">💡 인물/사물이 명확한 사진에 최적화</p>
+                        </a>
+                        
+                        <a href="web/pages/video-edit.html" class="tool-card">
+                            <div class="icon">🎬</div>
+                            <h3>동영상 구간 자르기</h3>
+                            <p>내장된 WebAssembly 엔진을 통해 브라우저에서 직접 빠른 컷편집.</p>
+                        </a>
+                        
+                        <a href="web/pages/youtube.html" class="tool-card">
+                            <div class="icon">⬇️</div>
+                            <h3>유튜브 영상 다운</h3>
+                            <p>복잡한 설치나 광고 없이 내 PC 자원을 활용한 안전한 원클릭 다운로드.</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 우측 배너광고 영역 (추후 광고 추가를 위해 주석 처리) -->
+                <!-- <div class="ad-side-banner">Ad Space<br>(우측 본문 옆)</div> -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('open');
+                document.getElementById('sidebarOverlay').classList.add('open');
+            } else {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+            }
+        });
+        document.getElementById('sidebarOverlay').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+        });
+    </script>
+</body>
+</html>

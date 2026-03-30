@@ -8,10 +8,42 @@
     <!-- 딸깍 파비콘 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <!-- Localized Tailwind CSS (w/o preflight) to bypass COEP block -->
+    <script src="../../web/assets/js/tailwindcss.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            corePlugins: { preflight: false },
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f2f4f6",
+                        "on-surface-variant": "#475569",
+                        "secondary": "#a855f7",
+                        "primary-fixed": "#e0e7ff",
+                        "on-surface": "#0f172a",
+                        "primary": "#6366f1",
+                        "outline-variant": "#cbd5e1",
+                        "surface-container": "#f1f5f9",
+                        "background": "#f8fafc"
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="preload" href="/web/components/sidebar.html" as="fetch" crossorigin="anonymous">
     <!-- JSZip 라이브러리 추가 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+        .from-primary { --tw-gradient-from: #4648d4 var(--tw-gradient-from-position); --tw-gradient-to: rgb(70 72 212 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+        .to-secondary { --tw-gradient-to: #8127cf var(--tw-gradient-to-position); }
+        .bg-clip-text { -webkit-background-clip: text; background-clip: text; }
+        .text-transparent { color: transparent; }
         h1 { font-size: 2.3rem; font-weight: 800; margin-bottom: 0.3rem; color: var(--text-color); }
         .subtitle { color: var(--accent-color); font-weight: 700; margin-bottom: 1rem; }
         
@@ -62,41 +94,30 @@
         .loading-text { color: var(--accent-color); font-weight: 800; font-size: 1.1rem; }
     </style>
     <script src="../assets/js/coi-serviceworker.js"></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body>
+<body class="sidebar-loading min-h-screen bg-background flex flex-col lg:flex-row">
     <div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1;">
         <div class="bg-blob"></div>
         <div class="bg-blob-2"></div>
     </div>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <div class="sidebar" id="sidebar">
-        <div style="margin-bottom: 2.5rem;">
-            <a href="../../index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
-            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
-                </svg>
-                딸깍 작업
-            </div>
-        </div>
-        <nav class="nav-menu">
-            <a href="bg-remove.html" class="nav-item active">✂️ 배경 제거</a>
-            <a href="video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
-            <a href="youtube.html" class="nav-item">⬇️ 유튜브 다운</a>
-        </nav>
-        <div class="sidebar-footer">
-            &copy; 2026 Snap-Task.<br>
-        </div>
-    </div>
 
-    <div class="main-content">
-        <header class="top-bar" style="--page-theme-gradient: linear-gradient(135deg, #ec4899, #ec4899, #d946ef);">
-            <button class="menu-toggle" id="menuToggle">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-            </button>
-            <span class="top-bar-title">✂️ 배경 제거</span>
+    <div class="main-content flex-1 max-w-full lg:ml-0 flex flex-col min-h-[100vh]">
+        <header class="sticky top-0 left-0 w-full flex justify-between items-center px-6 py-4 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
+            <div class="flex items-center gap-3">
+                <!-- Hamburger Menu Toggle -->
+                <button id="menuToggle" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-slate-100 transition-all">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="lg:hidden flex items-center">
+                    <a href="../../index.html" class="flex items-center active:scale-95 transition-all">
+                        <span class="material-symbols-outlined text-primary text-2xl mr-2">grid_view</span>
+                        <span class="text-xl font-black bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent font-headline tracking-tight">SnapTask</span>
+                        <span class="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black ml-2 -translate-y-1.5">딸깍 작업</span>
+                    </a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4"></div>
         </header>
 
         <div class="main-content-inner">
@@ -403,21 +424,6 @@
             }
         });
     </script>
-
-    <!-- 사이드바 햄버거 토글 JS -->
-    <script>
-        document.getElementById('menuToggle').addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                document.getElementById('sidebar').classList.add('open');
-                document.getElementById('sidebarOverlay').classList.add('open');
-            } else {
-                document.getElementById('sidebar').classList.toggle('collapsed');
-            }
-        });
-        document.getElementById('sidebarOverlay').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('open');
-        });
-    </script>
+    <script src="/web/assets/js/layout.js"></script>
 </body>
 </html>

@@ -50,10 +50,10 @@ const server = http.createServer((req, res) => {
                 'Access-Control-Allow-Origin': '*'
             };
 
-            // Apply COOP/COEP headers globally for testing purposes
-            // This ensures SharedArrayBuffer is always available for FFmpeg.wasm
-            headers['Cross-Origin-Opener-Policy'] = 'same-origin';
-            headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+            // Skip COOP/COEP headers header for general serving to allow CDNs (Tailwind, etc.)
+            // Individual pages requiring SharedArrayBuffer will use coi-serviceworker.js
+            // headers['Cross-Origin-Opener-Policy'] = 'same-origin';
+            // headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
             headers['Cross-Origin-Resource-Policy'] = 'cross-origin';
 
             res.writeHead(200, headers);

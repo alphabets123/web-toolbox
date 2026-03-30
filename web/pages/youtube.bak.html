@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../assets/js/coi-serviceworker.js"></script>
+    <title>유튜브 다운로드 - Snap-Task</title>
+    <!-- 딸깍 파비콘 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖱️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.2rem; color: var(--text-color); }
+        .subtitle { color: var(--accent-color); font-weight: 700; margin-bottom: 1.2rem; font-size: 0.95rem; }
+        
+        .downloader-box {
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .bridge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.4rem 1rem;
+            background: #f8fafc;
+            border-radius: 99px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #94a3b8;
+        }
+        .status-dot.online { background-color: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
+        .status-dot.offline { background-color: #ef4444; }
+
+        /* 가로 배치 입력 그룹 */
+        .input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1.2rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid #f1f5f9;
+            font-size: 0.95rem;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.2s;
+            background: #fdfdfd;
+        }
+
+        input[type="text"]:focus {
+            border-color: #ff0000;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.05);
+        }
+
+        .btn-analyze {
+            padding: 0 1.2rem;
+            background: linear-gradient(135deg, #ff0000, #ff4d4d);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-analyze:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+        }
+
+        .btn-analyze:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .preview-card {
+            margin-top: 1.2rem;
+            display: none;
+            animation: slideUp 0.4s ease-out;
+            text-align: left;
+            border-top: 1.5px dashed #f1f5f9;
+            padding-top: 1.2rem;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .preview-card img {
+            width: 100%;
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
+
+        .preview-card h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.4;
+            color: var(--text-color);
+        }
+
+        .progress-area {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.6rem;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: #ff0000;
+            transition: width 0.3s ease;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        #log {
+            margin-top: 1rem;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.7rem;
+            max-height: 100px;
+            overflow-y: auto;
+            text-align: left;
+            display: none;
+        }
+
+        /* 상세 옵션 스타일 */
+        .option-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .format-toggle {
+            display: flex;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 0.6rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .format-toggle button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            background: transparent;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+
+        .format-toggle button.active {
+            background: #ffffff;
+            color: #ff0000;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .res-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .res-chip {
+            padding: 0.35rem 0.8rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .res-chip:hover {
+            border-color: #cbd5e1;
+            background: #e2e8f0;
+        }
+
+        .res-chip.active {
+            background: #ff0000;
+            color: white;
+            border-color: #ff0000;
+            box-shadow: 0 2px 6px rgba(255, 0, 0, 0.2);
+        }
+
+        .res-chip.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: #f8fafc;
+        }
+
+        /* 에이전트 설정 버튼 */
+        .btn-setup {
+            margin-left: 8px;
+            padding: 2px 8px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .btn-setup:hover { background: #cc0000; }
+        .spin { animation: spin 1s linear infinite; }
+        .btn-launch {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.5rem 1.2rem;
+            background: linear-gradient(135deg, #ff0000, #ff4040);
+            color: white;
+            border: none;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+            animation: pulse-red 2s infinite;
+        }
+
+        .btn-launch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 0, 0, 0.3);
+            background: linear-gradient(135deg, #ff1a1a, #ff5c5c);
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: -1;">
+        <div class="bg-blob"></div>
+        <div class="bg-blob-2"></div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div style="margin-bottom: 2.5rem;">
+            <a href="../../index.html" class="brand" style="margin-bottom: 0;">Snap-Task</a>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-top: 0.4rem; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.3rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>
+                </svg>
+                딸깍 작업
+            </div>
+        </div>
+        <nav class="nav-menu">
+            <a href="bg-remove.html" class="nav-item">✂️ 배경 제거</a>
+            <a href="video-edit.html" class="nav-item">🎬 동영상 컷편집</a>
+            <a href="youtube.html" class="nav-item active">⬇️ 유튜브 다운</a>
+        </nav>
+        <div class="sidebar-footer">
+            &copy; 2026 Snap-Task.<br>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header class="top-bar" style="--page-theme-gradient: linear-gradient(135deg, #ff0000, #ff0000, #ff7b00);">
+            <button class="menu-toggle" id="menuToggle">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <span class="top-bar-title">⬇️ 유튜브 다운로드</span>
+        </header>
+
+        <div class="main-content-inner">
+            <div class="content-wrapper">
+                <div class="container" style="text-align: center;">
+                    <h1>유튜브 다운로드</h1>
+                    <p class="subtitle">PC에서만 동작하며 에이전트 다운 및 실행이 필요합니다</p>
+                    <p style="font-size: 0.8rem; color: #64748b; margin-top: -0.8rem; margin-bottom: 1.5rem; font-weight: 600;">
+                        ※ 연령 제한 영상을 받으려면 <b>성인 인증된 계정 로그인</b>과 <b>파이어폭스 브라우저 설치</b>가 필요할 수 있습니다.
+                    </p>
+
+                    <div class="downloader-box">
+                        <div class="bridge-status">
+                            <div id="statusDot" class="status-dot"></div>
+                            <span id="statusText">에이전트 연결 확인 중...</span>
+                        </div>
+                        <div id="step1">
+                            <div class="input-row">
+                                <input type="text" id="urlInput" placeholder="유튜브 URL을 입력해 주세요">
+                                <button id="analyzeBtn" class="btn-analyze" onclick="analyzeVideo()">분석하기</button>
+                            </div>
+                            
+                            <!-- 연령 제한 해결 가이드 (파이어폭스 전용) -->
+                            <div id="cookie_guide_area" style="display: none; margin-top: 1.2rem; padding: 1.8rem; border: 2px solid #3ea6ff; border-radius: 12px; background: #f0f9ff;">
+                                <div style="font-size: 1rem; color: #0369a1; font-weight: 800; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="color: #ff7114;">
+                                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2v-6h2v6z"/>
+                                    </svg>
+                                    연령 제한 해결 가이드 (파이어폭스 전용)
+                                </div>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 1.8rem; font-size: 0.9rem; color: #0c4a6e; line-height: 1.6;">
+                                    <div style="display: flex; gap: 12px;">
+                                        <b style="color: #0284c7; min-width: 20px;">1.</b>
+                                        <span>파이어폭스가 없다면 먼저 설치해 주세요. [<a href="https://www.mozilla.org/ko/firefox/new/" target="_blank" style="color: #0284c7; font-weight: 800; text-decoration: underline;">Firefox 다운로드</a>]</span>
+                                    </div>
+                                    <div style="display: flex; gap: 12px;">
+                                        <b style="color: #0284c7; min-width: 20px;">2.</b>
+                                        <span>아래 버튼을 누르면 파이어폭스로 영상이 열립니다.</span>
+                                    </div>
+                                    <div style="display: flex; gap: 12px;">
+                                        <b style="color: #0284c7; min-width: 20px;">3.</b>
+                                        <span>로그인이 안 되어 있다면 <b>성인 인증된 계정</b>으로 로그인해 주세요.</span>
+                                    </div>
+                                    <div style="display: flex; gap: 12px;">
+                                        <b style="color: #0284c7; min-width: 20px;">4.</b>
+                                        <span>영상이 정상 재생되면, <b>파이어폭스 창을 완전히 닫아주세요.</b></span>
+                                    </div>
+                                </div>
+
+                                <button id="btn_open_auth" onclick="openAuthBrowser()" style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: #ff7114; color: white; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(230, 96, 0, 0.3);">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                    인증 브라우저(Firefox)로 영상 열기
+                                </button>
+                                
+                                <div id="auth_waiting_msg" style="display: none; margin-top: 15px; padding: 15px; background: #fff; border-radius: 12px; border: 2px solid #bae6fd; font-size: 0.95rem; color: #0369a1; font-weight: 800; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+                                    ⏳ <b>파이어폭스</b>에서 로그인 확인 후, <b style="color: #e11d48; text-decoration: underline;">창을 완전히 닫아주세요!</b><br>
+                                    <span style="font-size: 0.8rem; color: #0ea5e9; font-weight: 600;">(닫히는 순간 분석 결과를 현재 페이지에 즉시 표시합니다)</span>
+                                </div>
+                                <div style="margin-top: 20px; font-size: 0.8rem; color: #94a3b8; font-weight: 600; border-top: 1px dashed #bae6fd; padding-top: 15px;">
+                                    💡 문제가 지속되면 <b>페이지를 새로고침(F5)</b> 하거나 사이트를 다시 접속해 주세요.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Options Selection -->
+                        <div id="step2" class="preview-card">
+                            <div style="display: flex; gap: 1.2rem; flex-wrap: wrap;">
+                                <div style="flex: 1.2; min-width: 260px;">
+                                    <img id="thumbnail" src="" alt="Thumbnail">
+                                    <h3 id="videoTitle">영상 제목</h3>
+                                </div>
+                                <div style="flex: 1; min-width: 240px; text-align: left;">
+                                    <label class="option-label">파일 형식</label>
+                                    <div class="format-toggle">
+                                        <button class="active" onclick="setFormat('mp4', this)">Video (MP4)</button>
+                                        <button onclick="setFormat('mp3', this)">Audio (MP3)</button>
+                                    </div>
+
+                                    <div id="resolutionArea" style="margin-top: 1.2rem;">
+                                        <label class="option-label">해상도 선택</label>
+                                        <div id="resolutionChips" class="res-chips">
+                                            <!-- 자바스크립트로 동적 생성됨 -->
+                                        </div>
+                                    </div>
+                                    
+                                    <button id="downloadBtn" class="btn-analyze" style="width: 100%; height: 48px; margin-top: 1.2rem; font-size: 1rem;" onclick="startDownload()">다운로드 시작</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Progress -->
+                        <div id="step3" class="progress-area">
+                            <div class="progress-bar-bg">
+                                <div id="progressBar" class="progress-bar-fill"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span id="progressPercent">0%</span>
+                                <span id="downloadInfo">준비 중...</span>
+                            </div>
+                            <div id="log"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">
+                        🔒 모든 다운로드는 본인의 PC에서 직접 처리되어 안전합니다.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const BRIDGE_URL = 'http://localhost:8888';
+        const urlInput = document.getElementById('urlInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+
+        const thumbnail = document.getElementById('thumbnail');
+        const videoTitle = document.getElementById('videoTitle');
+        const resolutionChips = document.getElementById('resolutionChips');
+        const resolutionArea = document.getElementById('resolutionArea');
+        
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const downloadInfo = document.getElementById('downloadInfo');
+        const log = document.getElementById('log');
+
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        let currentFormat = 'mp4';
+        let currentQuality = '1080';
+        let currentUrl = ''; // 현재 분석된 URL 저장용
+        let lastActualBrowser = 'none'; // 마지막으로 성공한 분석에서 사용된 브라우저
+
+        // 에이전트 상태와 입력값에 따라 버튼을 업데이트하는 통합 함수
+        function updateAnalyzeButton(isReady) {
+            const url = urlInput.value.trim();
+            const isAnalyzing = analyzeBtn.innerHTML.includes('분석 중...');
+            
+            // 에이전트 준비 전에는 입력창도 막음
+            urlInput.disabled = !isReady;
+            
+            if (isAnalyzing) return;
+
+            analyzeBtn.onclick = analyzeVideo;
+
+            if (!isReady) {
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '에이전트 준비 중...';
+            } else {
+                analyzeBtn.innerHTML = '분석하기';
+                analyzeBtn.disabled = !url;
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch(`${BRIDGE_URL}/status`);
+                const data = await res.json();
+                
+                const isReady = data.ytdlp && data.ffmpeg;
+                const isOldVersion = data.version && data.version.startsWith('v20260327'); // 어제 날짜 버전 감지
+                
+                statusDot.className = isReady ? 'status-dot online' : 'status-dot busy';
+                
+                let statusHtml = isReady ? '에이전트 준비 완료' : '시스템 구성 요소 점검 및 설치 중...';
+                if (isReady && isOldVersion) {
+                    statusHtml += ` <span style="color: #f59e0b; font-size: 0.75rem; font-weight: 800; animation: blink 1s infinite;">(🔄 업데이트 지연됨)</span>`;
+                }
+                statusText.innerHTML = statusHtml;
+                
+                // 구버전(v20260327 등) 감지 시 안내 팝업 (1회성)
+                if (isOldVersion && !localStorage.getItem('update_alert_shown')) {
+                    localStorage.setItem('update_alert_shown', 'true');
+                    Swal.fire({
+                        title: '스타터 업데이트 권장',
+                        html: `현재 <b>구버전 스타터</b>를 사용 중이라 업데이트가 지연되고 있습니다.<br><br>새 스타터를 한 번만 더 내려받으시면, 앞으로는 <b>기다림 없이 즉시 업데이트</b>가 진행됩니다!<br><br><small style="color: #666;">(기다리시면 5~10분 내로 자동 업데이트되나, 즉시 적용을 위해 재설치를 권장합니다.)</small>`,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: '최신 스타터 다운로드',
+                        cancelButtonText: '나중에 하기',
+                        confirmButtonColor: '#3b82f6'
+                    }).then((result) => {
+                        if (result.isConfirmed) showAgentGuide();
+                    });
+                }
+                
+                updateAnalyzeButton(isReady);
+            } catch (e) {
+                statusDot.className = 'status-dot offline';
+                
+                // 설치 여부에 따라 문구 변경 (localStorage 활용)
+                const isInstalled = localStorage.getItem('snaptask_installed');
+                if (isInstalled) {
+                    statusText.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="color: #64748b;">에이전트 꺼짐</span>
+                            <button class="btn-launch" onclick="launchAgent()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                엔진 가동하기
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    statusText.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="color: #64748b;">에이전트 미설치</span>
+                            <button class="btn-launch" style="background: linear-gradient(135deg, #3b82f6, #60a5fa); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); animation: none;" onclick="showAgentGuide()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                스타터 설치 안내
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                if (!analyzeBtn.innerHTML.includes('분석 중...')) {
+                    analyzeBtn.disabled = true;
+                    analyzeBtn.innerHTML = '에이전트 연결 대기 중...';
+                }
+            }
+        }
+
+        function launchAgent() {
+            // 커스텀 프로토콜 호출 (스타터 실행)
+            window.location.assign('snaptask://launch?app=youtube');
+            
+            Swal.fire({
+                title: '에이전트 가동 요청',
+                text: '시스템 로딩 중입니다. 잠시만 기다려 주세요...',
+                html: '<br><small style="color: #888;">반응이 없다면 스타터가 설치되어 있는지 확인해 주세요.</small><br><br><button onclick="showAgentGuide()" style="background:#f1f5f9; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:700; font-size:0.8rem;">[설치 안내 보기]</button>',
+                icon: 'info',
+                timer: 5000,
+                showConfirmButton: true,
+                confirmButtonText: '확인',
+                confirmButtonColor: '#3ea6ff'
+            });
+        }
+
+        // 입력창 타이핑 시 실시간 활성화 체크
+        urlInput.addEventListener('input', () => {
+            const isReady = statusDot.classList.contains('online');
+            updateAnalyzeButton(isReady);
+        });
+
+        function showAgentGuide() {
+            Swal.fire({
+                title: 'Snap-Task V2 시작하기',
+                html: `
+                    <div style="text-align: left; line-height: 1.6; font-size: 0.95rem;">
+                        이제 번거로운 개별 설치 없이 <b>스타터 하나로 충분</b>합니다.<br><br>
+                        <b>1. V2 스타터 다운로드 (최초 1회)</b><br>
+                        아래 버튼을 눌러 통합 스타터를 받아주세요.<br>
+                        <a href="../../dist/st-starter.exe" download onclick="localStorage.setItem('snaptask_installed', 'true')"
+                           style="display: inline-block; background: #007bff; color: white; padding: 5px 15px; border-radius: 4px; text-decoration: none; margin: 10px 0; font-weight: 800;">
+                           st-starter.exe 다운로드
+                        </a><br>
+                        
+                        <b>2. 프로그램 실행</b><br>
+                        다운로드한 <code>st-starter.exe</code>를 한 번만 실행하면 시스템 등록이 완료됩니다.<br><br>
+                        
+                        <b>3. 즉시 가동</b><br>
+                        이후에는 <b>[가동하기]</b>를 누르면 터미널 창과 함께 엔진이 시작됩니다.<br><br>
+                        <small style="color: grey;">* 60초간 사용하지 않으면 자동으로 종료됩니다.</small>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: '확인',
+                confirmButtonColor: '#007bff'
+            }).then(() => checkStatus());
+        }
+
+        async function setupBridge() {
+            setupBtn.disabled = true;
+            setupBtn.innerHTML = '처리 중...';
+            statusText.innerText = '필수 파일 설치 및 업데이트 중... (약 1분 소요)';
+            
+            try {
+                const res = await fetch(`${BRIDGE_URL}/setup`);
+                const text = await res.text();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '설정 완료',
+                    text: '이제 모든 기능을 안정적으로 사용할 수 있습니다.',
+                    confirmButtonColor: '#ff0000'
+                });
+            } catch (e) {
+                Swal.fire('오류', '에이전트 설정 중 문제가 발생했습니다.', 'error');
+            } finally {
+                setupBtn.disabled = false;
+                setupBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg> 초기화/업데이트';
+                checkStatus();
+            }
+        }
+
+        function enableAnalyzeUI() {
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<i class="fas fa-search"></i> 분석하기';
+            urlInput.disabled = false;
+            
+            // 파이어폭스 대기 UI도 원래대로 복구 (고착 방지)
+            const authBtn = document.getElementById('btn_open_auth');
+            const authWait = document.getElementById('auth_waiting_msg');
+            if (authBtn) {
+                authBtn.style.display = 'flex';
+                authBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> 인증 브라우저(Firefox)로 영상 열기';
+                authBtn.disabled = false;
+            }
+            if (authWait) authWait.style.display = 'none';
+        }
+
+        async function analyzeVideo(forceBrowser = null) {
+            const url = urlInput.value.trim();
+            if (!url) return Swal.fire('알림', '유튜브 URL을 입력해 주세요.', 'info');
+            currentUrl = url; // 전역 변수에 저장
+            lastActualBrowser = 'none'; // 새로운 분석 시작 시 초기화
+
+            // 1. UI 및 상태 초기화
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 분석 중...';
+            
+            // 분석 시작 시 브라우저 옵션은 파이어폭스로 고정
+            const browser = 'firefox';
+            
+            if (browser === 'firefox') {
+                step2.style.display = 'none';
+                step3.style.display = 'none';
+            }
+
+            // 분석 시작 시 가이드 영역 참조 및 일단 숨김 (실패 시에만 다시 노출)
+            const guideArea = document.getElementById('cookie_guide_area');
+            const isAutoResume = new URLSearchParams(window.location.search).get('auto') === 'true';
+            
+            // 매개변수로 전달된 브라우저가 '문자열'인 경우에만 사용 (이벤트 객체 유입 방지)
+            let actualBrowser = (typeof forceBrowser === 'string' ? forceBrowser : null) || (isAutoResume ? 'firefox' : 'none');
+
+            // 분석 시작 시 URL의 auto 파라미터는 즉시 제거하여 이후 새로고침 시 무한 루프 방지
+            if (isAutoResume) {
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }
+
+            if (guideArea) guideArea.style.display = 'none';
+
+            try {
+                const res = await fetch(`${BRIDGE_URL}/info?url=${encodeURIComponent(url)}&browser=${actualBrowser}`);
+                const data = await res.json();
+                if (data.error) {
+                    const err = new Error(data.error);
+                    err.details = data.details;
+                    throw err;
+                }
+
+                // 분석 성공 즉시 브라우저 정보 저장 (지연 시간 이전에 확보)
+                lastActualBrowser = actualBrowser;
+                console.log(`[분석 성공] 사용된 브라우저: ${lastActualBrowser}`);
+
+                // 썸네일 로딩 감지 (캐시 방지 위해 속도보다 정확성 우선)
+                const thumbnailLoaded = new Promise((resolve) => {
+                    thumbnail.onload = resolve;
+                    thumbnail.onerror = resolve;
+                    thumbnail.src = data.thumbnail + (data.thumbnail.includes('?') ? '&' : '?') + 't=' + Date.now();
+                });
+
+                videoTitle.innerText = data.title;
+                availableResolutions = data.resolutions || [];
+                renderResolutions();
+
+                // 이미지가 브라우저에 캐시되었더라도 로딩 프로세스를 명확히 기다림
+                await thumbnailLoaded;
+                
+                // 화면 표시 시작
+                step2.style.display = 'block';
+                
+                // 브라우저 렌더링 루프 동기화 (레이아웃 확정 대기)
+                await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+                
+                // 자연스러운 스크롤
+                step2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // 애니메이션(0.4s) 및 스크롤 안정화 대기 (충분히 긴 1.2초 대기)
+                // 이 시점이 되어야 유저가 화면이 '다 떴다'고 인지함
+                await new Promise(r => setTimeout(r, 1200));
+
+                downloadBtn.onclick = startDownload;
+                
+                // 성공 시에도 혹시 모를 로딩 상태를 위해 버튼 복구
+                enableAnalyzeUI();
+
+            } catch (e) {
+                // 1차 실패 시 연령 제한인 경우 파이어폭스로 자동 재시도 (최초 1회)
+                if (actualBrowser === 'none' && (e.message === '[ERROR_AGE_RESTRICTED]' || e.message === '[ERROR_COOKIE_LOCKED]' || e.message.includes('DPAPI'))) {
+                    console.log('[재시도] 연령 제한 감지됨. 파이어폭스 쿠키로 자동 재시도합니다...');
+                    return analyzeVideo('firefox');
+                }
+                
+                // 진짜 실패 시 입력창 다시 활성화
+                enableAnalyzeUI();
+
+                if (e.message === '[ERROR_AGE_RESTRICTED]' || e.message === '[ERROR_FIREFOX_NOT_LOGGED_IN]' || e.message === '[ERROR_BROWSER_LOCKED]' || e.message.includes('DPAPI') || e.details?.includes('DPAPI')) {
+                    const guideArea = document.getElementById('cookie_guide_area');
+                    if (guideArea) guideArea.style.display = 'block'; // 가이드 무조건 노출
+                    
+                    if (e.message === '[ERROR_FIREFOX_NOT_LOGGED_IN]') {
+                        Swal.fire({
+                            title: '로그인 필요',
+                            html: `파이어폭스 브라우저에서 <b>성인 인증된 유튜브 계정 로그인</b>이 되어 있지 않습니다.<br><br>파이어폭스를 실행하여 로그인을 완료한 후, 창을 닫고 다시 시도해 주세요.`,
+                            icon: 'warning',
+                            confirmButtonText: '확인',
+                            confirmButtonColor: '#ff7114'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: '인증 가이드 확인',
+                            html: `이 영상은 <b>성인 인증</b>이 필요하거나 브라우저 보안 정책의 영향을 받습니다.<br><br>가장 확실한 해결을 위해 아래 추가된 <b>파이어폭스(Firefox) 인증 가이드</b>를 따라주세요.`,
+                            icon: 'info',
+                            confirmButtonText: '가이드 확인',
+                            confirmButtonColor: '#0284c7'
+                        });
+                    }
+                } else {
+                    const errorMsg = e.message || '영상 정보를 가져오지 못했습니다.';
+                    const details = e.details ? `<br><small style="color: #666; font-size: 0.7rem;">${e.details}</small>` : '';
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: '분석 실패',
+                        html: `${errorMsg}${details}`,
+                        confirmButtonColor: '#ff0000'
+                    });
+                }
+                enableAnalyzeUI();
+            } finally {
+                // 기존의 무조건적 활성화 로직 제거 (위에서 성공/실패 시 각각 처리)
+                console.log('분석 프로세스 종료');
+            }
+        }
+
+        function setFormat(fmt, btn) {
+            currentFormat = fmt;
+            document.querySelectorAll('.format-toggle button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            if (fmt === 'mp3') {
+                resolutionArea.style.opacity = '0.3';
+                resolutionArea.style.pointerEvents = 'none';
+            } else {
+                resolutionArea.style.opacity = '1';
+                resolutionArea.style.pointerEvents = 'auto';
+            }
+        }
+
+        function renderResolutions() {
+            resolutionChips.innerHTML = '';
+            // 프리셋 해상도들
+            const presets = [2160, 1440, 1080, 720, 480, 360];
+            let defaultSet = false;
+
+            presets.forEach(res => {
+                const isAvailable = availableResolutions.some(r => r >= res);
+                const chip = document.createElement('div');
+                chip.className = `res-chip ${isAvailable ? '' : 'disabled'}`;
+                chip.innerText = res >= 2160 ? '4K' : res + 'p';
+                
+                if (isAvailable) {
+                    chip.onclick = () => {
+                        currentQuality = res;
+                        document.querySelectorAll('.res-chip').forEach(c => c.classList.remove('active'));
+                        chip.classList.add('active');
+                    };
+                    
+                    // 기본값 1080p 시도, 없으면 가능한 최고 화질
+                    if (!defaultSet && (res === 1080 || !presets.includes(1080))) {
+                        chip.click();
+                        defaultSet = true;
+                    }
+                }
+                resolutionChips.appendChild(chip);
+            });
+            
+            if (!defaultSet && availableResolutions.length > 0) {
+                const firstChip = resolutionChips.querySelector('.res-chip:not(.disabled)');
+                if (firstChip) firstChip.click();
+            }
+        }
+
+        function startDownload() {
+            const browser = lastActualBrowser;
+            console.log(`[다운로드 시작] 전송될 브라우저 쿠키: ${browser}`);
+            
+            // UI 초기화: 진행 상태창과 로그창을 보여줍니다.
+            step3.style.display = 'block';
+            log.style.display = 'block';
+            log.innerHTML = ''; // 이전 로그 초기화
+            progressBar.style.width = '0%';
+            progressPercent.innerText = '0%';
+            downloadInfo.innerText = '다운로드 준비 중...';
+            
+            const query = `url=${encodeURIComponent(currentUrl)}&format=${currentFormat}&quality=${currentQuality}&browser=${browser}`;
+            const eventSource = new EventSource(`${BRIDGE_URL}/download?${query}`);
+
+            eventSource.onmessage = (event) => {
+                const data = event.data;
+                console.log('[에이전트 로그]', data); // 모든 로그 콘솔 출력
+                
+                if (data.includes('[DONE]')) {
+                    eventSource.close();
+                    downloadInfo.innerText = '저장 완료!';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '다운로드 완료',
+                        text: '다운로드 폴더에 안전하게 저장되었습니다.',
+                        showCancelButton: true,
+                        confirmButtonText: '폴더 열기',
+                        cancelButtonText: '닫기',
+                        confirmButtonColor: '#3ea6ff'
+                    }).then((result) => {
+                        if (result.isConfirmed) fetch(`${BRIDGE_URL}/open-folder`);
+                        window.location.href = window.location.pathname; // URL 파라미터 없이 초기화
+                    });
+                    return;
+                }
+
+                if (data.includes('[ERROR_AGE_RESTRICTED]')) {
+                    eventSource.close();
+                    statusText.innerText = '성인 인증 필요';
+                    Swal.fire({
+                        title: '연령 제한 확인됨',
+                        html: `
+                            <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
+                                이 영상은 성인 인증이 필요하여 현재 상태로는 받을 수 없습니다.<br><br>
+                                <b>해결 방법:</b><br>
+                                1. 브라우저(크롬/엣지 등)에서 유튜브에 로그인합니다.<br>
+                                2. 성인 인증 절차를 완료합니다.<br>
+                                3. 현재 페이지 설정에서 파이어폭스(Firefox)를 사용하도록 안내를 따라주세요.<br>
+                                <span style="color: #ff0000; font-weight: 800;">* 주의: 브라우저가 켜져 있으면 쿠키를 못 읽을 수 있으니, 파이어폭스를 완전히 끄고 재시도해 보세요!</span>
+                            </div>
+                        `,
+                        icon: 'warning',
+                        confirmButtonText: '확인'
+                    }).then(() => window.location.href = window.location.pathname);
+                    return;
+                }
+
+                if (data.includes('[ERROR]')) {
+                    eventSource.close();
+                    Swal.fire('오류 발생', data, 'error').then(() => window.location.href = window.location.pathname);
+                    return;
+                }
+
+                const percentMatch = data.match(/(\d+\.\d+)%/);
+                if (percentMatch) {
+                    const p = percentMatch[1];
+                    progressBar.style.width = p + '%';
+                    progressPercent.innerText = p + '%';
+                    downloadInfo.innerText = '파일 전송 및 변환 중...';
+                }
+
+                const logLine = document.createElement('div');
+                logLine.innerText = data;
+                log.appendChild(logLine);
+                log.scrollTop = log.scrollHeight;
+            };
+
+            eventSource.onerror = () => {
+                eventSource.close();
+                Swal.fire('연결 끊김', '에이전트와의 연결이 끊어졌습니다.', 'error');
+            };
+        }
+
+        // Sidebar logic
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('open');
+                document.getElementById('sidebarOverlay').classList.add('open');
+            } else {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+            }
+        });
+        document.getElementById('sidebarOverlay').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+        });
+
+        let detectedBrowser = 'none'; // 자동 감지된 브라우저 저장용
+
+        function autoDetectBrowser() {
+            const ua = navigator.userAgent.toLowerCase();
+            if (ua.includes('whale')) detectedBrowser = 'whale';
+            else if (ua.includes('edg/')) detectedBrowser = 'edge';
+            else if (ua.includes('brave')) detectedBrowser = 'brave';
+            else if (ua.includes('chrome')) detectedBrowser = 'chrome';
+            else if (ua.includes('firefox')) detectedBrowser = 'firefox';
+            
+            console.log('감지된 브라우저:', detectedBrowser);
+        }
+
+        async function openAuthBrowser() {
+            const browser = 'firefox';
+            
+            const url = urlInput.value.trim();
+            if (!url) return;
+
+            // 에이전트에게 브라우저 열기 요청
+            try {
+                await fetch(`${BRIDGE_URL}/reopen-browser?browser=${browser}&url=${encodeURIComponent(url)}`);
+                
+                document.getElementById('auth_waiting_msg').style.display = 'block';
+                
+                const btn = document.getElementById('btn_open_auth');
+                btn.disabled = true;
+                btn.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.21-8.58"></path></svg> 브라우저 닫기 대기 중...';
+                
+                // 브라우저가 닫힐 때까지 감시 시작
+                waitForBrowserClose(browser);
+            } catch (e) {
+                Swal.fire('연결 오류', '에이전트와 통신할 수 없습니다.', 'error');
+            }
+        }
+
+        async function waitForBrowserClose(browser) {
+            const check = async () => {
+                try {
+                    const res = await fetch(`${BRIDGE_URL}/check-browser?browser=${browser}`);
+                    const data = await res.json();
+                    
+                    if (!data.running) {
+                        // 브라우저가 닫혔음! 현재 창에서 즉시 분석 재개
+                        Swal.fire({
+                            title: '인증 완료!',
+                            text: '쿠키를 성공적으로 캡처했습니다. 분석을 재개합니다...',
+                            icon: 'success',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+                        
+                        // 현재 페이지에서 분석 함수 직접 호출 (파이어폭스 쿠키 사용 강제)
+                        analyzeVideo('firefox');
+                        return;
+                    }
+                    setTimeout(check, 1000);
+                } catch (e) {
+                    setTimeout(check, 1000);
+                }
+            };
+            check();
+        }
+
+        // 페이지 로드 시 자동 재개 확인
+        function checkAutoResume() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('auto') === 'true') {
+                const url = params.get('url');
+                const browser = params.get('browser');
+                if (url) {
+                    urlInput.value = url;
+                    // 가이드 영역을 보이게 해서 유저가 무엇이 진행되는지 알게 함
+                    document.getElementById('cookie_guide_area').style.display = 'block';
+                    setTimeout(() => {
+                        analyzeVideo();
+                    }, 500);
+                }
+            }
+        }
+
+        setInterval(checkStatus, 5000);
+        checkStatus();
+        autoDetectBrowser(); // 페이지 로드 시 실행
+        checkAutoResume();   // 자동 재개 체크
+
+    </script>
+</body>
+</html>

@@ -13,13 +13,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const customStyle = wrapper.querySelector('style');
         const overlay = wrapper.querySelector('#sidebarOverlay');
         const sidebar = wrapper.querySelector('#sidebar');
-        const mobileNav = wrapper.querySelector('#mobileNav');
         
         // Inject elements into DOM
         if (customStyle) document.head.appendChild(customStyle);
         if (sidebar) document.body.insertBefore(sidebar, document.body.firstChild);
         if (overlay) document.body.insertBefore(overlay, document.body.firstChild);
-        if (mobileNav) document.body.appendChild(mobileNav);
 
         // Remove CSS skeleton loader placeholder
         document.body.classList.remove('sidebar-loading');
@@ -51,26 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Highlight Mobile Nav Links
-        document.querySelectorAll('.mobile-nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            let isMatch = false;
 
-            if (path === '/' && (href === '/' || href.includes('index.html'))) {
-                isMatch = true;
-            } else if (path !== '/' && href !== '/' && path.includes(href.replace('.html', ''))) {
-                isMatch = true;
-            }
-
-            if (isMatch) {
-                // Active styles
-                link.classList.add('text-primary', 'bg-primary-fixed', 'rounded-2xl');
-                link.classList.remove('text-on-surface-variant', 'hover:text-primary');
-                // Apply fill to icon
-                const icon = link.querySelector('.material-symbols-outlined');
-                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
-            }
-        });
 
         // 4. Sidebar toggle logic
         const menuToggle = document.getElementById('menuToggle');

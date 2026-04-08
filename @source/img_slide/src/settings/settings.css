@@ -1,0 +1,191 @@
+/* === 기본 & 레이아웃 === */
+html {
+    --primary-color: #007aff; /* iOS 스타일의 파란색 */
+    --background-color: #f0f2f5; /* 살짝 다른 회색톤으로 변경 */
+    --card-background-color: #ffffff;
+    --text-color: #1d1d1f;
+    --secondary-text-color: #6e6e73;
+    --border-color: #d1d1d6;
+    --hover-color: #e9e9ed;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    font-size: 13px; /* ⭐️ 기본 폰트 크기를 13px로 줄입니다. */
+    line-height: 1.5;
+}
+
+.container {
+    padding: 20px 24px; /* 상하 여백 줄임 */
+    max-width: 950px; /* 창 크기에 맞게 최대 너비 조정 */
+    margin: 0 auto;
+}
+
+/* ⭐️ 2단 그리드 레이아웃 설정 */
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 1:1 비율의 두 개 열 */
+    gap: 24px; /* 열 사이의 간격 */
+}
+
+.settings-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* 열 내부의 설정 그룹 간 간격 */
+}
+
+/* === 타이포그래피 === */
+h1 {
+    font-size: 24px; /* ⭐️ 제목 크기 줄임 */
+    font-weight: 600;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px; /* ⭐️ 여백 줄임 */
+    margin-top: 0;
+    margin-bottom: 20px; /* ⭐️ 여백 줄임 */
+}
+
+h2 {
+    font-size: 16px; /* ⭐️ 소제목 크기 줄임 */
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 10px 0; /* ⭐️ 여백 줄임 */
+    padding: 0;
+    border: none;
+}
+
+p {
+    font-size: 12px; /* ⭐️ 설명 텍스트 크기 줄임 */
+    color: var(--secondary-text-color);
+    margin: -6px 0 12px 0; /* ⭐️ 여백 줄임 */
+}
+
+.setting-group {
+    background-color: var(--card-background-color);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    /* ⭐️ 각 그룹의 하단 여백은 column의 gap으로 대체 */
+}
+
+/* === 폼 요소 === */
+label {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* ⭐️ 간격 줄임 */
+    cursor: pointer;
+    font-size: 14px; /* ⭐️ 라벨 폰트 크기 줄임 */
+}
+
+.radio-group, .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* ⭐️ 간격 줄임 */
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+    /* accent-color로 체크박스/라디오 버튼 색상 변경 */
+    accent-color: var(--primary-color);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.sub-setting {
+    padding-left: 24px; /* ⭐️ 들여쓰기 줄임 */
+    margin-top: 8px; /* ⭐️ 여백 줄임 */
+}
+
+/* === 입력 필드 & 버튼 === */
+#folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* ⭐️ 간격 줄임 */
+    margin-bottom: 10px; /* ⭐️ 여백 줄임 */
+}
+
+.folder-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px; /* ⭐️ 여백 줄임 */
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+}
+
+.folder-item button {
+    background-color: transparent;
+    border: none;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    font-size: 15px; /* ⭐️ 아이콘 크기 줄임 */
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.folder-item button:hover {
+    background-color: var(--hover-color);
+    color: #d92c2c;
+}
+
+input[type="number"] {
+    width: 80px;
+    padding: 6px 10px; /* ⭐️ 여백 줄임 */
+    font-size: 14px; /* ⭐️ 폰트 크기 줄임 */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+}
+
+input[type="number"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.actions {
+    text-align: right;
+    margin-top: 20px; /* ⭐️ 여백 줄임 */
+    grid-column: 1 / -1; /* ⭐️ 버튼 영역이 그리드의 전체 너비를 차지하도록 설정 */
+}
+
+.btn {
+    padding: 10px 20px; /* ⭐️ 버튼 여백 줄임 */
+    font-size: 14px; /* ⭐️ 버튼 폰트 크기 줄임 */
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn.primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn:hover {
+    filter: brightness(1.1);
+}
+
+.btn:active {
+    transform: scale(0.98);
+    filter: brightness(0.95);
+}
+
+#add-folder-btn {
+    width: 100%;
+    background-color: #e9e9ed;
+    color: var(--text-color);
+}
+
+#add-folder-btn:hover {
+    background-color: #dcdce1;
+}

@@ -1,0 +1,174 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    color: white;
+    font-family: sans-serif;
+    cursor: none; /* 평상시 마우스 커서 숨김 */
+}
+
+#slideshow-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#message-overlay {
+    position: fixed; /* 화면에 고정 */
+    bottom: 30px; /* 하단에서 30px 위 */
+    left: 50%; /* 가운데 정렬 */
+    transform: translateX(-50%); /* 가운데 정렬 */
+    width: auto; /* 내용에 맞게 너비 조절 */
+    height: auto;
+    padding: 15px 30px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.7);
+    z-index: 10;
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    opacity: 0; /* 기본적으로 숨김 */
+    pointer-events: none; /* 클릭 이벤트 통과 */
+}
+
+#loading-message {
+    font-size: 2em;
+}
+
+.image-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#current-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    /* 전환 효과는 JS에서 클래스로 제어 */
+}
+
+/* --- 표시 방법 클래스 --- */
+#current-image.fit-contain { object-fit: contain; width: 100%; height: 100%; }
+#current-image.fit-cover-width { object-fit: cover; width: 100%; height: auto; min-height: 100%; }
+#current-image.fit-cover-height { object-fit: cover; width: auto; height: 100%; min-width: 100%; }
+
+
+/* --- 패닝(이동) 애니메이션 --- */
+@keyframes pan-vertical {
+    0% { object-position: 50% 0%; }
+    100% { object-position: 50% 100%; }
+}
+
+@keyframes pan-horizontal {
+    0% { object-position: 0% 50%; }
+    100% { object-position: 100% 50%; }
+}
+
+#current-image.panning {
+    animation-name: var(--pan-animation-name);
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards;
+    /* ⭐️ 왕복 및 무한 반복 속성 제거 */
+    /* animation-direction: alternate; */
+    /* animation-iteration-count: infinite; */
+}
+
+/* 전환 효과 클래스 */
+.transition-fade { transition: opacity 1.5s ease-in-out !important; }
+.transition-slideUp { transition: transform 1.5s ease-out, opacity 1.5s ease-out !important; }
+.transition-zoomIn { transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out !important; }
+.transition-slideLeft { transition: transform 1.5s ease-out, opacity 1.5s ease-out !important; }
+.transition-zoomOut { transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out !important; }
+
+/* HUD 메뉴 */
+#hud-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 15px;
+    text-align: center;
+    /* ⭐️ 메시지 오버레이보다 항상 위에 있도록 z-index 값을 매우 높게 설정합니다. */
+    z-index: 9999;
+    display: flex;
+    justify-content: space-between; /* 그룹들을 양쪽 끝으로 분산 */
+    gap: 15px;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease-out;
+}
+
+#hud-menu.visible {
+    transform: translateY(0);
+}
+
+#hud-menu button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #444;
+    color: white;
+    border: 1px solid #666;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#hud-menu .hud-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#hud-menu .hud-group.center {
+    flex-grow: 1;
+    justify-content: flex-end;
+    min-width: 0; /* flex-grow와 함께 사용할 때 중요 */
+}
+
+#hud-menu #current-path {
+    text-align: right;
+    font-size: 14px;
+    color: #ccc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl; /* 경로가 길 때 앞부분이 잘리도록 함 */
+    user-select: text; /* 텍스트 선택 가능하도록 변경 */
+    cursor: text;
+}
+
+#hud-menu #open-folder-btn {
+    padding: 5px 10px;
+}
+
+#hud-menu label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+#hud-menu #exit-btn {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+#hud-menu button:hover {
+    background-color: #555;
+}
+
+.hidden {
+    /* 이 클래스는 이제 메시지 오버레이를 표시하는 데 사용됩니다. */
+    /* display: none; 속성을 제거합니다. */
+}
+
+#message-overlay:not(.hidden) {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}

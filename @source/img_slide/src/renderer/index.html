@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>구병원 이미지 슬라이더</title> 
+    <link rel="icon" href="../../icon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="slideshow-container">
+        <div id="message-overlay">
+            <div id="loading-message">이미지 목록을 불러오는 중...</div>
+        </div>
+        <div class="image-wrapper">
+            <img id="current-image" src="" alt="슬라이드 이미지">
+        </div>
+    </div>
+    <div id="hud-menu" class="hidden">
+        <div class="hud-group left">
+            <button id="prev-btn" title="이전 이미지">«</button>
+            <button id="play-pause-btn" title="일시정지/재생">❚❚</button>
+            <button id="next-btn" title="다음 이미지">»</button>
+            <button id="settings-btn" title="설정">⚙️</button>
+            <button id="exit-btn" title="종료">⊗</button>
+            <label><input type="checkbox" id="fullscreen-checkbox" title="전체 화면"> 전체화면</label>
+            <label><input type="checkbox" id="pin-menu-checkbox" title="메뉴바 고정"> 고정</label>
+        </div>
+        <div class="hud-group center">
+            <span id="current-path" title="이미지 경로"></span>
+            <button id="open-folder-btn" title="파일 폴더 열기">📂</button>
+        </div>
+    </div>
+    <script src="renderer.js"></script>
+</body>
+</html>

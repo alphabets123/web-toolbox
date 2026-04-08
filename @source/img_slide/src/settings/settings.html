@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>설정</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="container">
+        <h1>슬라이드쇼 설정</h1>
+        
+        <div class="settings-grid">
+            <!-- 왼쪽 열 -->
+            <div class="settings-column">
+                <div class="setting-group">
+                    <h2>이미지 폴더</h2>
+                    <p>이미지가 포함된 폴더를 추가하세요. 네트워크 경로도 가능합니다. (예: \\\\server\\share)</p>
+                    <div id="folder-list"></div>
+                    <button id="add-folder-btn" class="btn">+</button>
+                </div>
+                
+                <div class="setting-group">
+                    <h2>이미지 표시 방법</h2>
+                    <div class="radio-group">
+                        <div class="radio-item"><label><input type="radio" name="displayMethod" value="contain" checked> 화면에 딱 맞게 (기본값, 검은여백 O)</label></div>
+                        <div class="radio-item">
+                            <label><input type="radio" name="displayMethod" value="cover-width"> 가로 꽉 채우기 (세로 잘릴 수 있음)</label>
+                            <div id="pan-vertical-wrapper" class="sub-setting"><label><input type="checkbox" id="pan-vertical-checkbox"> 이미지를 세로로 이동합니다.</label></div>
+                        </div>
+                        <div class="radio-item">
+                            <label><input type="radio" name="displayMethod" value="cover-height"> 세로 꽉 채우기 (가로 잘릴 수 있음)</label>
+                            <div id="pan-horizontal-wrapper" class="sub-setting"><label><input type="checkbox" id="pan-horizontal-checkbox"> 이미지를 가로로 이동합니다.</label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽 열 -->
+            <div class="settings-column">
+                <div class="setting-group">
+                    <h2>이미지 표시 시간 (초)</h2>
+                    <input type="number" id="interval-input" min="1" value="10">
+                </div>
+
+                <div class="setting-group">
+                    <h2>전환 효과 (단일 효과 적용)</h2>
+                    <div class="radio-group">
+                        <label><input type="radio" name="transitionEffect" value="none"> 효과 없음 (None)</label>
+                        <label><input type="radio" name="transitionEffect" value="fade" checked> 부드럽게 (Fade)</label> <!-- 기본값 -->
+                        <label><input type="radio" name="transitionEffect" value="slideUp"> 아래에서 위로 (Slide Up)</label>
+                        <label><input type="radio" name="transitionEffect" value="zoomIn"> 확대 (Zoom In)</label>
+                        <label><input type="radio" name="transitionEffect" value="slideLeft"> 왼쪽으로 (Slide Left)</label>
+                        <label><input type="radio" name="transitionEffect" value="zoomOut"> 축소 (Zoom Out)</label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h2>시작 설정</h2>
+                    <label><input type="checkbox" id="start-fullscreen-checkbox"> 시작 시 전체 화면으로 실행</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="save-btn" class="btn primary">저장하고 닫기</button>
+        </div>
+    </div>
+    <script src="settings.js"></script>
+</body>
+</html>

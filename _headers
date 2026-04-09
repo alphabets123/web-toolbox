@@ -1,3 +1,7 @@
-/*
+/web/pages/video-edit.html
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+
+/web/pages/bg-remove.html
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp

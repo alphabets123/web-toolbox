@@ -356,7 +356,7 @@
         let state = {
             images: [],
             currentIndex: -1,
-            isPlaying: true,
+            isPlaying: false, // 이제 수동으로 시작해야 합니다.
             timer: null,
             activeLayer: 'a', // 'a' 또는 'b'
             preloaded: new Set(),
@@ -467,8 +467,14 @@
                     shuffleArray(state.images);
                 }
                 
+                
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.style.display = 'none', 500);
+                
+                // 로딩은 끝났지만, 재생은 사용자가 버튼을 눌러야 시작합니다.
+                updateLoading('준비되었습니다. 하단의 재생 버튼을 눌러 시작하세요.', false);
+                console.log('--- SnapTask Image Slider Ready ---');
+                console.log('이미지 목록 로드 완료. 재생 버튼을 눌러 주십시오.');
                 
                 startSlideshow();
 
@@ -509,7 +515,10 @@
 
         // --- 3. 슬라이드쇼 엔진 ---
         function startSlideshow() {
-            nextSlide();
+            // nextSlide()를 자동으로 호출하지 않습니다.
+            // 버튼 상태를 재생 가능 상태로 확인
+            document.getElementById('play-icon').textContent = 'play_arrow';
+            progress.style.width = '0%';
         }
 
         function nextSlide() {
@@ -529,35 +538,38 @@
             if (!file) return '';
             if (file.type === 'local') return file.objectURL;
             
-            // 1. thumbnailLink 활용 (CORS 및 리소스 부하에 가장 강함)
-            if (file.thumbnailLink) {
-                // =s220 등의 작은 사이즈를 =s1600 등 큰 사이즈로 변환 시도
-                // 최신 구글 서버는 =s0 보다는 구체적인 수치를 선호할 때가 있음
-                return file.thumbnailLink.replace(/=s\d+$/, '=s1600');
-            }
-            
-            // 2. fallback: webContentLink (직접 다운로드 주소)
-            if (file.webContentLink) {
-                return file.webContentLink.replace('export=download', 'export=view');
-            }
-            
-            // 3. 마지막 수단: API alt=media 사용 (API 키 노출 가능성 및 할당량 소모)
-            return `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${state.settings.apiKey}`;
+            // 1. 구글 썸네일 서비스 (가장 안정적이고 CORS에 강함)
+            // sz=w1600 파라미터로 대형 이미지를 요청할 수 있으며, API 키가 필요 없는 경우가 많아 할당량 절약 가능
+            return `https://drive.google.com/thumbnail?id=${file.id}&sz=w1600`;
         }
 
         async function preloadNextImages(index) {
-            const count = 3; // 다음 3개 미리 로드
+            const count = 2; // 다음 2개만 미리 로드해 성능 최적화
             for (let i = 1; i <= count; i++) {
                 const nextIdx = (index + i) % state.images.length;
                 const file = state.images[nextIdx];
                 const url = getDriveUrl(file);
                 
                 if (!state.preloaded.has(url)) {
+                    console.log(`[사전로드] ${file.name}`);
                     const img = new Image();
                     img.src = url;
                     state.preloaded.add(url);
-                    console.log(`사전 로드 예약: ${file.name}`);
                 }
+            }
+        }
+
+        async function analyzeError(url, fileName) {
+            console.warn(`[디버그] 이미지 로드 실패 상세 분석 시도: ${fileName}`);
+            try {
+                // Fetch로 실제 응답 코드 확인 시도 (CORS 제한이 있을 수 있으나 에러 타입 확인 가능)
+                const response = await fetch(url, { method: 'GET', mode: 'no-cors' });
+                console.log(`[디버그] 네트워크 응답 유형: ${response.type}`);
+            } catch (e) {
+                console.error(`[디버그] 네트워크 요청 자체 실패: 
+                1. 인터넷 연결 확인
+                2. 구글 측의 일시적 차단 (Hotlinking 등)
+                3. 해당 파일의 공유 권한이 해제되었는지 확인`, e);
             }
         }
 
@@ -641,8 +653,9 @@
             } else {
                 nextImgEl.onload = finishLoad;
                 nextImgEl.onerror = () => {
-                    console.error('로딩 실패:', file.name);
-                    updateLoading(`이미지(${file.name}) 로딩 실패`, true);
+                    console.error('이미지 로딩 실패:', file.name, url);
+                    analyzeError(url, file.name);
+                    updateLoading(`이미지(${file.name}) 로딩 실패. 콘솔(F12)을 확인하세요.`, true);
                     setTimeout(nextSlide, 3000);
                 };
             }

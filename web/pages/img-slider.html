@@ -664,8 +664,8 @@
                     nextImgEl.style.setProperty('--pan-duration', `${state.settings.interval + 2}s`);
                     nextImgEl.classList.add('panning');
                     
-                    // 현재 스크롤 설정 반영
-                    if (!state.settings.useScroll) {
+                    // 현재 스크롤 설정 및 재생 상태 반영 (일시정지 중이거나 스크롤 토글이 꺼져있으면 멈춤)
+                    if (!state.isPlaying || !state.settings.useScroll) {
                         nextImgEl.classList.add('paused');
                     }
                 } else {
@@ -729,6 +729,9 @@
                 progress.style.transition = 'none';
                 progress.style.width = '0%';
             }
+
+            // 스크롤 애니메이션 상태 실시간 업데이트 (일시정지 시 스크롤도 멈춤)
+            applyLiveStyles();
         }
 
         // 중앙 버튼 클릭 이벤트
@@ -841,7 +844,8 @@
             
             if (state.settings.fit === 'cover-width') {
                 currentImgEl.classList.add('panning');
-                if (!state.settings.useScroll) {
+                // 재생 중이 아니거나 스크롤 설정이 꺼져있으면 애니메이션을 멈춤
+                if (!state.isPlaying || !state.settings.useScroll) {
                     currentImgEl.classList.add('paused');
                 } else {
                     currentImgEl.classList.remove('paused');

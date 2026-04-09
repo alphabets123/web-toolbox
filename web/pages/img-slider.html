@@ -528,8 +528,21 @@
         function getDriveUrl(file) {
             if (!file) return '';
             if (file.type === 'local') return file.objectURL;
-            // 고해상도 CDN 섬네일 주소 우선 사용
-            return file.thumbnailLink ? file.thumbnailLink.replace(/=s\d+$/, '=s0') : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${state.settings.apiKey}`;
+            
+            // 1. thumbnailLink 활용 (CORS 및 리소스 부하에 가장 강함)
+            if (file.thumbnailLink) {
+                // =s220 등의 작은 사이즈를 =s1600 등 큰 사이즈로 변환 시도
+                // 최신 구글 서버는 =s0 보다는 구체적인 수치를 선호할 때가 있음
+                return file.thumbnailLink.replace(/=s\d+$/, '=s1600');
+            }
+            
+            // 2. fallback: webContentLink (직접 다운로드 주소)
+            if (file.webContentLink) {
+                return file.webContentLink.replace('export=download', 'export=view');
+            }
+            
+            // 3. 마지막 수단: API alt=media 사용 (API 키 노출 가능성 및 할당량 소모)
+            return `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${state.settings.apiKey}`;
         }
 
         async function preloadNextImages(index) {

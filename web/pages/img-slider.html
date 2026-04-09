@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 슬라이더 - Snap-Task</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖼️</text></svg>">
+    <script src="../../web/assets/js/tailwindcss.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366f1",
+                        "secondary": "#a855f7",
+                        "on-surface": "#191c1e",
+                        "on-surface-variant": "#464554",
+                        "surface-container": "#eceef0",
+                        "background": "#f8fafc"
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; background: #f8fafc; color: #191c1e; transition: all 0.3s ease; }
+        
+        /* 대시보드 표준 구조 (layout.js 호환) */
+        .main-content { flex: 1; max-width: 100%; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        
+        /* 플레이어 박스 스타일 */
+        #player-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.3);
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #slider-view {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .image-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* 전체화면 모드 대응 */
+        #player-wrapper:fullscreen {
+            border-radius: 0;
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 슬라이드 이미지 공통 스타일 */
+        .slide-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            pointer-events: none;
+            display: block;
+            z-index: 10;
+        }
+
+        .slide-img.active { opacity: 1; z-index: 11; }
+        .fit-contain { object-fit: contain; width: 100%; height: 100%; }
+        .fit-cover-width { object-fit: cover; width: 100%; height: 100%; }
+
+        /* 패닝 애니메이션 */
+        @keyframes pan-vertical {
+            from { object-position: center top; }
+            to { object-position: center bottom; }
+        }
+        .slide-img.panning {
+            animation-name: var(--pan-animation-name);
+            animation-duration: var(--pan-duration);
+            animation-timing-function: ease-in-out;
+            animation-fill-mode: both;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+            z-index: 12;
+        }
+
+        /* HUD 메뉴 (플레이어 하단에 부유하거나 전체화면 시 바닥에 고정) */
+        #hud-menu {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 100;
+            background: rgba(15, 15, 15, 0.85);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+        #player-wrapper:fullscreen #hud-menu {
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            border-radius: 32px;
+        }
+
+        #hud-menu.visible, #hud-menu.pinned { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+        .hud-btn {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .hud-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
+        .hud-btn.active { color: #6366f1; background: white; }
+
+        /* 설정 모달 */
+        #settings-modal {
+            display: none; position: absolute; inset: 0; z-index: 300;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            align-items: center; justify-content: center;
+        }
+        #settings-modal.active { display: flex; }
+        .modal-content {
+            background: white; padding: 32px; border-radius: 32px;
+            width: 90%; max-width: 550px; max-height: 85vh; overflow-y: auto;
+        }
+        
+        #progress-bar {
+            position: absolute; bottom: 0; left: 0; height: 4px;
+            background: var(--primary, #6366f1); opacity: 0.6; width: 0%;
+            transition: width 0.3s; z-index: 150;
+        }
+
+        /* 폴더 리스트 아이템 */
+        .folder-item {
+            display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
+        }
+        .folder-input {
+            flex: 1; padding: 10px 16px; background: #f1f5f9;
+            border-radius: 12px; border: 1px solid transparent; outline: none;
+        }
+        .folder-input:focus { border-color: #6366f1; background: white; }
+        .remove-folder-btn { color: #f43f5e; opacity: 0.5; transition: opacity 0.2s; }
+        .remove-folder-btn:hover { opacity: 1; }
+    </style>
+<body class="sidebar-loading min-h-screen bg-background flex flex-col lg:flex-row">
+    
+    <div class="main-content flex-1 max-w-full lg:ml-0 flex flex-col min-h-[100vh]">
+        <!-- 헤더 (표준 구조) -->
+        <header class="sticky top-0 left-0 w-full flex justify-between items-center px-6 py-4 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
+            <div class="flex items-center gap-3">
+                <button id="menuToggle" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-slate-100 transition-all">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="lg:hidden flex items-center">
+                    <a href="../../index.html" class="flex items-center active:scale-95 transition-all">
+                        <span class="material-symbols-outlined text-primary text-2xl mr-2">grid_view</span>
+                        <span class="text-xl font-black bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent font-headline tracking-tight">SnapTask</span>
+                    </a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 text-on-surface-variant text-[11px] font-bold"></div>
+        </header>
+
+        <!-- 메인 콘텐츠 -->
+        <div class="flex-1 overflow-y-auto p-8 lg:p-12">
+            <div class="max-w-[1200px] mx-auto">
+                <div class="mb-10 text-center lg:text-left">
+                    <h1 class="text-4xl font-extrabold text-on-surface mb-2 tracking-tight">이미지 슬라이더</h1>
+                    <p class="text-on-surface-variant text-base opacity-70 leading-relaxed font-medium">
+                        유명화가의 작품을 감상합니다.<br>현재 제공되고 있는 그림은 칼라르손, 르누아르, 반고흐, 레오나르도 다빈치, 클로드 모네 등입니다. (저작권 free!)
+                    </p>
+                </div>
+
+                <!-- 플레이어 박스 -->
+                <div id="player-wrapper" class="group">
+                    <div id="slider-view">
+                        <div class="image-container">
+                            <img id="img-a" class="slide-img" src="" alt="슬라이드 A">
+                            <img id="img-b" class="slide-img" src="" alt="슬라이드 B">
+                        </div>
+                        
+                        <div id="loading-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-white bg-black z-20 transition-opacity duration-500">
+                            <div id="loading-spinner" class="animate-spin text-primary mb-4">
+                                <span class="material-symbols-outlined text-4xl">sync</span>
+                            </div>
+                            <p id="loading-text" class="text-xs font-bold opacity-70 px-10 text-center leading-relaxed">준비 중...</p>
+                        </div>
+                        <div id="progress-bar"></div>
+                    </div>
+
+                    <div id="hud-menu">
+                        <div class="flex items-center gap-4 flex-1 min-w-0">
+                            <div class="flex items-center bg-black/20 rounded-xl px-1 shrink-0">
+                                <button id="prev-btn" class="hud-btn" title="이전"><span class="material-symbols-outlined text-sm">skip_previous</span></button>
+                                <button id="play-pause-btn" class="hud-btn !bg-white !text-black" title="재생/일시정지"><span id="play-icon" class="material-symbols-outlined text-sm">pause</span></button>
+                                <button id="next-btn" class="hud-btn" title="다음"><span class="material-symbols-outlined text-sm">skip_next</span></button>
+                            </div>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <div class="overflow-x-auto whitespace-nowrap" style="-ms-overflow-style: none; scrollbar-width: none;">
+                                    <span id="current-info" class="text-xs font-black inline-block pr-4">명화 감상</span>
+                                </div>
+                                <div id="source-container" class="flex items-center gap-1.5 opacity-50">
+                                    <span id="source-icon" class="material-symbols-outlined text-[11px]">cloud</span>
+                                    <span id="source-name" class="text-[9px] font-bold tracking-wider uppercase truncate">명화 컬렉션</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <style>
+                            /* 가로 스크롤바 숨기기 (크롬/사파리) */
+                            #hud-menu .overflow-x-auto::-webkit-scrollbar { display: none; }
+                        </style>
+                        
+                        <div class="flex flex-wrap lg:flex-nowrap items-center gap-4 bg-white/5 px-4 py-1.5 rounded-xl border border-white/10 shrink-0">
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[9px] font-black opacity-30 uppercase">간격</span>
+                                <input type="number" id="hud-interval" class="w-10 bg-white/10 border-none rounded-lg px-1 py-0.5 text-[10px] text-center focus:ring-1 focus:ring-primary outline-none" value="20">
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[9px] font-black opacity-30 uppercase">표시</span>
+                                <select id="hud-fit" class="bg-white/10 border-none rounded-lg px-1 py-0.5 text-[10px] focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+                                    <option value="contain" class="bg-neutral-900">채우기</option>
+                                    <option value="cover-width" class="bg-neutral-900">너비맞춤 ↓스크롤</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[9px] font-black opacity-30 uppercase">효과</span>
+                                <select id="hud-transition" class="bg-white/10 border-none rounded-lg px-1 py-0.5 text-[10px] focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+                                    <option value="fade" class="bg-neutral-900">페이드</option>
+                                    <option value="zoomIn" class="bg-neutral-900">줌 인</option>
+                                    <option value="zoomOut" class="bg-neutral-900">줌 아웃</option>
+                                    <option value="slideUp" class="bg-neutral-900">슬라이드 업</option>
+                                </select>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer shrink-0">
+                                <input type="checkbox" id="hud-shuffle" class="hidden peer">
+                                <div class="w-6 h-3 bg-white/20 rounded-full relative peer-checked:bg-primary transition-colors">
+                                    <div class="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full transition-transform peer-checked:translate-x-3"></div>
+                                </div>
+                                <span class="text-[9px] font-bold opacity-40">무작위</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button id="pin-btn" class="hud-btn" title="HUD 고정"><span class="material-symbols-outlined text-sm">keep</span></button>
+                            <button id="settings-btn" class="hud-btn" title="폴더 설정"><span class="material-symbols-outlined text-sm">folder_managed</span></button>
+                            <button id="fullscreen-btn" class="hud-btn" title="전체화면"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+                            <button id="exit-btn" class="hidden hud-btn !bg-red-500/20 !text-red-400" title="나가기"><span class="material-symbols-outlined text-sm">close</span></button>
+                        </div>
+                    </div>
+    <!-- 설정 모달 -->
+    <div id="settings-modal">
+        <div class="modal-content shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-on-surface">슬라이더 설정</h2>
+                <button id="close-settings" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- 폴더 설정 -->
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="text-xs font-black text-on-surface-variant uppercase tracking-widest">Google Drive Folder IDs</label>
+                        <button id="add-folder-btn" class="text-xs font-black text-primary hover:underline flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">add_circle</span> 폴더 추가
+                        </button>
+                    </div>
+                    <div id="folder-list" class="space-y-2 max-h-[350px] overflow-y-auto pr-2" style="scrollbar-width: thin;">
+                        <!-- 항목들 동적 추가 -->
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="text-xs font-black text-on-surface-variant uppercase tracking-widest">내 PC 사진 재생 (이번 세션 한정)</label>
+                        <button id="add-local-folder-btn" class="text-xs font-black text-primary hover:underline flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">add_circle</span> PC 폴더 추가
+                        </button>
+                    </div>
+                    <div id="local-folder-list" class="space-y-2 max-h-[250px] overflow-y-auto pr-2" style="scrollbar-width: thin;">
+                        <!-- 로컬 항목들 동적 추가 -->
+                        <p class="text-[11px] text-center text-on-surface-variant opacity-60 py-4">선택된 PC 폴더가 없습니다.</p>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button id="save-settings" class="w-full py-4 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all">
+                        재생 목록 갱신 및 저장
+                    </button>
+                    <p class="text-center text-[10px] text-on-surface-variant mt-4 opacity-40">간격, 효과 등은 하단 제어 바에서 즉시 변경 가능합니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 사이드바 인젝션용 (최소화 유지) -->
+    <script src="/web/assets/js/layout.js"></script>
+
+    <script>
+        /**
+         * 온라인 이미지 슬라이더 핵심 로직
+         */
+        
+        // --- 1. 상태 및 설정 관리 ---
+        const DEFAULT_API_KEY = "AIzaSyDmj2GWjxJ_ngeXkNUes6iBk-dz1MrGFus";
+        const DEFAULT_FOLDER_ID = "SnapTask 기본 명화 이미지|1GGclR62dPOzW38k7YJ9XZ9WfAcCbD8eQ|1";
+
+        const hud = document.getElementById('hud-menu');
+        const overlay = document.getElementById('loading-overlay');
+        const imgA = document.getElementById('img-a');
+        const imgB = document.getElementById('img-b');
+        const progress = document.getElementById('progress-bar');
+        const playIcon = document.getElementById('play-icon');
+        
+        let state = {
+            images: [],
+            currentIndex: -1,
+            isPlaying: true,
+            timer: null,
+            activeLayer: 'a', // 'a' 또는 'b'
+            preloaded: new Set(),
+            localFolders: [], // { id, name, handle, isEnabled } 배열
+            useGDrive: true, // 드라이브 데이터 포함 여부 (항시 true)
+            settings: {
+                apiKey: DEFAULT_API_KEY,
+                folderIds: localStorage.getItem('slider_folder_ids') || DEFAULT_FOLDER_ID,
+                interval: parseInt(localStorage.getItem('slider_interval')) || 20,
+                transition: localStorage.getItem('slider_transition') || 'fade',
+                fit: localStorage.getItem('slider_fit') || 'contain',
+                shuffle: localStorage.getItem('slider_shuffle') !== 'false',
+                isPinned: localStorage.getItem('slider_pinned') === 'true'
+            }
+        };
+
+        async function getFilesFromDirHandle(dirHandle, sourceTitle) {
+            let files = [];
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const file = await entry.getFile();
+                    if (file.type.startsWith('image/')) {
+                        files.push({
+                            type: 'local',
+                            name: file.name,
+                            sourceTitle: sourceTitle,
+                            objectURL: URL.createObjectURL(file)
+                        });
+                    }
+                } else if (entry.kind === 'directory') {
+                    try {
+                        const subFiles = await getFilesFromDirHandle(entry, sourceTitle);
+                        files = files.concat(subFiles);
+                    } catch(e) {}
+                }
+            }
+            return files;
+        }
+
+        // --- 2. 구글/로컬 이미지 통합 처리 ---
+        async function fetchImages() {
+            let allFiles = [];
+
+            // 기존 오브젝트 URL 해제 (메모리 관리) 
+            if (state.images && state.images.length > 0) {
+                state.images.forEach(f => {
+                    if (f.objectURL) URL.revokeObjectURL(f.objectURL);
+                });
+            }
+
+            // 로컬 폴더 다중 처리
+            if (state.localFolders && state.localFolders.length > 0) {
+                updateLoading('로컬 폴더 이미지를 분석 중입니다...');
+                for (const folder of state.localFolders) {
+                    if (!folder.isEnabled) continue;
+                    try {
+                        const localPFiles = await getFilesFromDirHandle(folder.handle, folder.name);
+                        allFiles = allFiles.concat(localPFiles);
+                    } catch(e) {
+                        console.error("Local Folder Fetch Error", e);
+                    }
+                }
+            }
+
+            // 구글 드라이브 처리
+            if (state.useGDrive) {
+                const rootFolderEntries = state.settings.folderIds.split(',').filter(id => id.trim());
+                updateLoading('구글 드라이브 이미지를 분석 중입니다...');
+                
+                try {
+                    if (!state.settings.apiKey || state.settings.apiKey === 'undefined') state.settings.apiKey = DEFAULT_API_KEY;
+
+                    for (const entry of rootFolderEntries) {
+                        const parts = entry.split('|');
+                        let title = '', folderId = '', isEnabled = true;
+                        
+                        if (parts.length >= 3) {
+                            title = parts[0].trim();
+                            folderId = parts[1].trim();
+                            isEnabled = parts[2] === '1';
+                        } else if (parts.length === 2) {
+                            title = '구글 드라이브';
+                            folderId = parts[0].trim();
+                            isEnabled = parts[1] === '1';
+                        } else {
+                            title = '구글 드라이브';
+                            folderId = parts[0].trim();
+                        }
+                        
+                        if (!folderId || !isEnabled) continue; // 토글 꺼진 폴더는 스킵
+                        
+                        const folderFiles = await fetchFilesRecursive(folderId);
+                        allFiles = allFiles.concat(folderFiles.map(f => ({...f, type: 'gdrive', sourceTitle: title})));
+                    }
+                } catch (e) {
+                    console.error("GDrive Fetch Error", e);
+                    if (allFiles.length === 0) updateLoading(`오류: ${e.message}`, true);
+                }
+            }
+
+            try {
+                if (allFiles.length === 0) {
+                    throw new Error('재생할 이미지가 없습니다. 폴더와 파일, 또는 설정을 확인해주세요.');
+                }
+
+                state.images = allFiles;
+                if (state.settings.shuffle) {
+                    shuffleArray(state.images);
+                }
+                
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.style.display = 'none', 500);
+                
+                startSlideshow();
+
+            } catch (err) {
+                console.error(err);
+                updateLoading(`오류 발생: ${err.message}`, true);
+            }
+        }
+
+        async function fetchFilesRecursive(folderId, depth = 0) {
+            if (depth > 3) return []; // 너무 깊은 폴더는 성능을 위해 제한 (3단계까지)
+            
+            let files = [];
+            
+            // 이미지와 하위 폴더를 모두 가져옴 (thumbnailLink 포함)
+            const q = encodeURIComponent(`'${folderId}' in parents and trashed = false and (mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder')`);
+            const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,webContentLink,mimeType,thumbnailLink)&pageSize=1000&key=${state.settings.apiKey}`;
+            
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error.message);
+            
+            if (data.files) {
+                for (const item of data.files) {
+                    if (item.mimeType === 'application/vnd.google-apps.folder') {
+                        // 하위 폴더인 경우 재귀 호출
+                        const subFiles = await fetchFilesRecursive(item.id, depth + 1);
+                        files = files.concat(subFiles);
+                    } else {
+                        // 이미지 파일인 경우 추가
+                        files.push(item);
+                    }
+                }
+            }
+            return files;
+        }
+
+        // --- 3. 슬라이드쇼 엔진 ---
+        function startSlideshow() {
+            nextSlide();
+        }
+
+        function nextSlide() {
+            if (state.images.length === 0) return;
+            
+            state.currentIndex = (state.currentIndex + 1) % state.images.length;
+            showImage(state.currentIndex);
+        }
+
+        function prevSlide() {
+            if (state.images.length === 0) return;
+            state.currentIndex = (state.currentIndex - 1 + state.images.length) % state.images.length;
+            showImage(state.currentIndex);
+        }
+
+        function getDriveUrl(file) {
+            if (!file) return '';
+            if (file.type === 'local') return file.objectURL;
+            // 고해상도 CDN 섬네일 주소 우선 사용
+            return file.thumbnailLink ? file.thumbnailLink.replace(/=s\d+$/, '=s0') : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${state.settings.apiKey}`;
+        }
+
+        async function preloadNextImages(index) {
+            const count = 3; // 다음 3개 미리 로드
+            for (let i = 1; i <= count; i++) {
+                const nextIdx = (index + i) % state.images.length;
+                const file = state.images[nextIdx];
+                const url = getDriveUrl(file);
+                
+                if (!state.preloaded.has(url)) {
+                    const img = new Image();
+                    img.src = url;
+                    state.preloaded.add(url);
+                    console.log(`사전 로드 예약: ${file.name}`);
+                }
+            }
+        }
+
+        async function showImage(index) {
+            const file = state.images[index];
+            const url = getDriveUrl(file);
+            
+            // 레이어 전환 준비
+            const nextLayer = state.activeLayer === 'a' ? 'b' : 'a';
+            const nextImgEl = nextLayer === 'a' ? imgA : imgB;
+            const currentImgEl = state.activeLayer === 'a' ? imgA : imgB;
+
+            // HUD 정보 업데이트
+            document.getElementById('current-info').textContent = file.name;
+            const sourceIcon = document.getElementById('source-icon');
+            const sourceName = document.getElementById('source-name');
+            
+            if (file.type === 'gdrive') {
+                sourceIcon.textContent = 'cloud';
+                sourceName.textContent = file.sourceTitle || '구글 드라이브';
+            } else {
+                sourceIcon.textContent = 'laptop_windows';
+                sourceName.textContent = file.sourceTitle || '내 PC 사진';
+            }
+
+            // 로딩 바 시작
+            resetTimer();
+            startProgressBar();
+
+            // 다음 이미지 세팅 시작
+            nextImgEl.src = url;
+            
+            // 만약 이미지가 아직 로드되지 않았다면 로딩 오버레이 노출
+            let isInstant = nextImgEl.complete && nextImgEl.naturalWidth > 0;
+            if (!isInstant) {
+                overlay.style.display = 'flex';
+                overlay.style.opacity = '1';
+                document.getElementById('loading-spinner').style.display = 'block';
+                updateLoading(`${file.name} 이미지를 불러오는 중...`);
+            }
+
+            // 로딩 완료 대기
+            const finishLoad = () => {
+                // 로딩 오버레이 숨김
+                overlay.style.opacity = '0';
+                setTimeout(() => { if(overlay.style.opacity === '0') overlay.style.display = 'none' }, 500);
+
+                // 레이어 교체 애니메이션
+                nextImgEl.className = `slide-img active fit-${state.settings.fit}`;
+                currentImgEl.classList.remove('active');
+                
+                // 너비 맞춤일 때 자동 수직 패닝 적용
+                if (state.settings.fit === 'cover-width') {
+                    // 강제 재시작 트리거
+                    nextImgEl.style.animation = 'none';
+                    void nextImgEl.offsetWidth;
+                    nextImgEl.style.animation = '';
+                    
+                    nextImgEl.style.setProperty('--pan-animation-name', 'pan-vertical');
+                    nextImgEl.style.setProperty('--pan-duration', `${state.settings.interval + 2}s`);
+                    nextImgEl.classList.add('panning');
+                } else {
+                    nextImgEl.classList.remove('panning');
+                }
+
+                // 전환 효과 (Active 레이어)
+                void nextImgEl.offsetWidth;
+                const effect = state.settings.transition;
+                if (effect !== 'none') {
+                    nextImgEl.classList.add(`effect-${effect}`);
+                }
+
+                state.activeLayer = nextLayer;
+                
+                // 다음 이미지들 사전 로드 시작
+                preloadNextImages(index);
+            };
+
+            if (isInstant) {
+                finishLoad();
+            } else {
+                nextImgEl.onload = finishLoad;
+                nextImgEl.onerror = () => {
+                    console.error('로딩 실패:', file.name);
+                    updateLoading(`이미지(${file.name}) 로딩 실패`, true);
+                    setTimeout(nextSlide, 3000);
+                };
+            }
+        }
+
+        function startProgressBar() {
+            progress.style.transition = 'none';
+            progress.style.width = '0%';
+            void progress.offsetWidth;
+            if (state.isPlaying) {
+                progress.style.transition = `width ${state.settings.interval}s linear`;
+                progress.style.width = '100%';
+            }
+        }
+
+        function resetTimer() {
+            if (state.timer) clearTimeout(state.timer);
+            if (state.isPlaying) {
+                state.timer = setTimeout(nextSlide, state.settings.interval * 1000);
+            }
+        }
+
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            document.getElementById('play-icon').textContent = state.isPlaying ? 'pause' : 'play_arrow';
+            if (state.isPlaying) {
+                nextSlide();
+            } else {
+                if (state.timer) clearTimeout(state.timer);
+                progress.style.transition = 'none';
+                progress.style.width = '0%';
+            }
+        }
+
+        // --- 4. 유틸리티 및 UI 이벤트 ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function updateLoading(text, isError = false) {
+            const el = document.getElementById('loading-text');
+            if (el) {
+                el.textContent = text;
+                if (isError) {
+                    el.classList.add('text-red-400');
+                    const spinner = document.getElementById('loading-spinner');
+                    if (spinner) spinner.style.display = 'none';
+                }
+            }
+        }
+
+        // HUD 제어 (클릭 토글)
+        function toggleHUD() {
+            const isVisible = hud.classList.contains('visible');
+            if (isVisible) {
+                hud.classList.remove('visible');
+            } else {
+                hud.classList.add('visible');
+            }
+        }
+
+        // 초기 HUD 고정 상태 설정
+        if (state.settings.isPinned) {
+            hud.classList.add('pinned');
+            document.getElementById('pin-btn').classList.add('active');
+        }
+
+        document.getElementById('pin-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.settings.isPinned = !state.settings.isPinned;
+            localStorage.setItem('slider_pinned', state.settings.isPinned);
+            hud.classList.toggle('pinned', state.settings.isPinned);
+            document.getElementById('pin-btn').classList.toggle('active', state.settings.isPinned);
+        });
+
+        // 실시간 HUD 제어
+        const hudInterval = document.getElementById('hud-interval');
+        const hudFit = document.getElementById('hud-fit');
+        const hudTransition = document.getElementById('hud-transition');
+        const hudShuffle = document.getElementById('hud-shuffle');
+
+        function syncHUD() {
+            hudInterval.value = state.settings.interval;
+            hudFit.value = state.settings.fit;
+            hudTransition.value = state.settings.transition;
+            hudShuffle.checked = state.settings.shuffle;
+        }
+
+        hudInterval.addEventListener('change', () => {
+            state.settings.interval = parseInt(hudInterval.value) || 10;
+            localStorage.setItem('slider_interval', state.settings.interval);
+            resetTimer();
+        });
+
+        hudFit.addEventListener('change', () => {
+            state.settings.fit = hudFit.value;
+            localStorage.setItem('slider_fit', state.settings.fit);
+            applyLiveStyles();
+        });
+
+        hudTransition.addEventListener('change', () => {
+            state.settings.transition = hudTransition.value;
+            localStorage.setItem('slider_transition', state.settings.transition);
+        });
+
+        hudFit.addEventListener('change', () => {
+            state.settings.fit = hudFit.value;
+            localStorage.setItem('slider_fit', state.settings.fit);
+            applyLiveStyles();
+        });
+
+        hudTransition.addEventListener('change', () => {
+            state.settings.transition = hudTransition.value;
+            localStorage.setItem('slider_transition', state.settings.transition);
+        });
+
+        hudShuffle.addEventListener('change', () => {
+            state.settings.shuffle = hudShuffle.checked;
+            localStorage.setItem('slider_shuffle', state.settings.shuffle);
+        });
+
+        function applyLiveStyles() {
+            // 현재 활성 이미지에 즉시 스타일 반영
+            const currentImgEl = state.activeLayer === 'a' ? imgA : imgB;
+            currentImgEl.className = `slide-img active fit-${state.settings.fit}`;
+            
+            if (state.settings.fit === 'cover-width') {
+                currentImgEl.style.setProperty('--pan-animation-name', 'pan-vertical');
+                currentImgEl.style.setProperty('--pan-duration', `${state.settings.interval + 2}s`);
+                currentImgEl.classList.add('panning');
+            } else {
+                currentImgEl.classList.remove('panning');
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            // HUD 내부나 설정창 클릭 시에는 토글하지 않음
+            if (e.target.closest('#hud-menu') || e.target.closest('#settings-modal')) return;
+            toggleHUD();
+        });
+
+        // 설정 관리 (동적 폴더 리스트)
+        const modal = document.getElementById('settings-modal');
+        const folderListContainer = document.getElementById('folder-list');
+
+        function renderFolderList() {
+            folderListContainer.innerHTML = '';
+            let rawData = state.settings.folderIds || '';
+            const defFull = DEFAULT_FOLDER_ID;
+            const defId = "1GGclR62dPOzW38k7YJ9XZ9WfAcCbD8eQ";
+            
+            if (!rawData.includes(defId)) {
+                // 기본 명화 세트가 없으면 강제로 최상단에 주입
+                rawData = defFull + (rawData ? ',' + rawData : '');
+            }
+            
+            const entries = rawData.split(',').filter(id => id.trim());
+            
+            entries.forEach((entry, index) => {
+                const parts = entry.split('|');
+                let title = '', folderId = '', isEnabled = true;
+                if (parts.length >= 3) {
+                    title = parts[0]; folderId = parts[1]; isEnabled = parts[2] === '1';
+                } else if (parts.length === 2) {
+                    title = '커스텀 폴더'; folderId = parts[0]; isEnabled = parts[1] === '1';
+                } else {
+                    title = '커스텀 폴더'; folderId = parts[0]; isEnabled = true;
+                }
+                
+                const isFirstLocked = (index === 0 && folderId === defId);
+                addFolderRow(title, folderId, isEnabled, isFirstLocked);
+            });
+        }
+
+        function addFolderRow(title = '', id = '', isEnabled = true, isFirst = false) {
+            const div = document.createElement('div');
+            div.className = 'folder-item w-full mb-3';
+            div.innerHTML = `
+                <div class="flex items-center gap-3 w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                    <label class="flex items-center cursor-pointer shrink-0" title="이 폴더 이미지 포함하기">
+                        <input type="checkbox" class="folder-toggle hidden peer" ${isEnabled ? 'checked' : ''}>
+                        <div class="w-10 h-5 bg-slate-200 rounded-full relative peer-checked:bg-primary transition-colors">
+                            <div class="absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
+                        </div>
+                    </label>
+                    <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
+                        <input type="text" class="folder-title bg-transparent text-sm font-bold text-on-surface md:w-1/3 outline-none border-b md:border-b-0 border-slate-200 focus:border-primary disabled:opacity-50 transition-colors" placeholder="제목 (예: 내 사진)" value="${title}" ${isFirst ? 'disabled' : ''}>
+                        <div class="hidden md:block w-px h-4 bg-slate-300"></div>
+                        <input type="text" class="folder-input bg-transparent text-xs text-on-surface-variant flex-1 min-w-0 outline-none font-mono disabled:opacity-50" placeholder="Google Drive Folder ID" value="${id}" ${isFirst ? 'disabled' : ''}>
+                    </div>
+                    ${!isFirst ? `
+                    <button class="remove-folder-btn p-1.5 flex items-center justify-center hover:bg-red-100/50 text-red-400 hover:text-red-500 rounded-lg shrink-0 transition-colors" title="폴더 제거">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                    ` : '<div class="w-8 shrink-0"></div>'}
+                </div>
+            `;
+            
+            if (!isFirst) {
+                div.querySelector('.remove-folder-btn').addEventListener('click', () => {
+                    div.remove();
+                });
+            }
+            
+            folderListContainer.appendChild(div);
+        }
+
+        document.getElementById('add-folder-btn').addEventListener('click', () => addFolderRow('', '', true, false));
+
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            renderFolderList();
+            renderLocalFolderList();
+            modal.classList.add('active');
+        });
+
+        const localFolderListContainer = document.getElementById('local-folder-list');
+
+        function renderLocalFolderList() {
+            if (!localFolderListContainer) return;
+            localFolderListContainer.innerHTML = '';
+            
+            if (state.localFolders.length === 0) {
+                localFolderListContainer.innerHTML = '<p class="text-[11px] text-center text-on-surface-variant opacity-60 py-4">선택된 PC 폴더가 없습니다.</p>';
+                return;
+            }
+
+            state.localFolders.forEach(folder => {
+                const div = document.createElement('div');
+                div.className = 'folder-item w-full mb-3';
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                        <label class="flex items-center cursor-pointer shrink-0" title="이 폴더 이미지 포함하기">
+                            <input type="checkbox" class="local-folder-toggle hidden peer" ${folder.isEnabled ? 'checked' : ''}>
+                            <div class="w-10 h-5 bg-slate-200 rounded-full relative peer-checked:bg-primary transition-colors">
+                                <div class="absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
+                            </div>
+                        </label>
+                        <div class="flex-1 min-w-0 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-slate-400 text-lg">folder</span>
+                            <span class="text-sm font-bold text-on-surface truncate">${folder.name}</span>
+                        </div>
+                        <button class="remove-local-btn p-1.5 flex items-center justify-center hover:bg-red-100/50 text-red-400 hover:text-red-500 rounded-lg shrink-0 transition-colors" title="폴더 해제">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                    </div>
+                `;
+                
+                div.querySelector('.local-folder-toggle').addEventListener('change', (e) => {
+                    folder.isEnabled = e.target.checked;
+                });
+                
+                div.querySelector('.remove-local-btn').addEventListener('click', () => {
+                    state.localFolders = state.localFolders.filter(f => f.id !== folder.id);
+                    renderLocalFolderList();
+                });
+                
+                localFolderListContainer.appendChild(div);
+            });
+        }
+
+        document.getElementById('add-local-folder-btn')?.addEventListener('click', async () => {
+            try {
+                if (!window.showDirectoryPicker) {
+                    alert("이 브라우저에서는 폴더 선택 기능을 지원하지 않습니다. (최신 크롬/엣지를 사용하세요)");
+                    return;
+                }
+                const dirHandle = await window.showDirectoryPicker();
+                if (state.localFolders.some(f => f.name === dirHandle.name)) {
+                    alert("이미 추가된 폴더입니다.");
+                    return;
+                }
+                state.localFolders.push({
+                    id: Date.now().toString(),
+                    name: dirHandle.name,
+                    handle: dirHandle,
+                    isEnabled: true
+                });
+                renderLocalFolderList();
+            } catch (err) {
+                if (err.name !== 'AbortError') alert("폴더 선택 중 오류: " + err.message);
+            }
+        });
+
+        document.getElementById('close-settings').addEventListener('click', () => modal.classList.remove('active'));
+        
+        document.getElementById('save-settings').addEventListener('click', async () => {
+            const folderItems = folderListContainer.querySelectorAll('.folder-item');
+            const folderIds = Array.from(folderItems).map(item => {
+                const titleVal = item.querySelector('.folder-title').value.trim() || '커스텀 폴더';
+                const inputVal = item.querySelector('.folder-input').value.trim();
+                const isChecked = item.querySelector('.folder-toggle').checked ? '1' : '0';
+                if (!inputVal) return null;
+                return `${titleVal}|${inputVal}|${isChecked}`;
+            }).filter(v => v).join(',');
+            
+            // 로컬 스토리지 업데이트 (구글 설정)
+            localStorage.setItem('slider_folder_ids', folderIds);
+            
+            // 상태 갱신
+            state.settings.apiKey = DEFAULT_API_KEY;
+            state.settings.folderIds = folderIds;
+            state.useGDrive = true;
+            // state.localFolders는 버튼을 통한 추가/삭제 시 이미 실시간 갱신되므로 추가 저장 로직이 필요 없습니다.
+            
+            modal.classList.remove('active');
+            
+            // 슬라이더 초기화 및 재시작
+            if (state.timer) clearTimeout(state.timer);
+            imgA.classList.remove('active', 'panning');
+            imgB.classList.remove('active', 'panning');
+            imgA.src = '';
+            imgB.src = '';
+            state.images = [];
+            state.currentIndex = -1;
+            state.preloaded.clear();
+            
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+            updateLoading('재생 목록을 준비 중입니다...');
+            await fetchImages();
+        });
+
+        // 기타 조작
+        document.getElementById('play-pause-btn').addEventListener('click', togglePlay);
+        document.getElementById('next-btn').addEventListener('click', nextSlide);
+        document.getElementById('prev-btn').addEventListener('click', prevSlide);
+        document.getElementById('exit-btn').addEventListener('click', () => {
+            // Tauri 환경 대비용 원복 로직 유지
+            location.href = '/';
+        });
+
+        document.getElementById('fullscreen-btn').addEventListener('click', () => {
+            const player = document.getElementById('player-wrapper');
+            if (!document.fullscreenElement) {
+                player.requestFullscreen().catch(err => {
+                    alert(`전체화면 전환 실패: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // 슬라이드 이동 함수 (복구)
+        function nextSlide() {
+            if (state.images.length === 0) return;
+            state.currentIndex = (state.currentIndex + 1) % state.images.length;
+            showImage(state.currentIndex);
+        }
+
+        function prevSlide() {
+            if (state.images.length === 0) return;
+            state.currentIndex = (state.currentIndex - 1 + state.images.length) % state.images.length;
+            showImage(state.currentIndex);
+        }
+
+        // 초기 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            syncHUD();
+            fetchImages();
+        });
+
+    </script>
+</body>
+</html>

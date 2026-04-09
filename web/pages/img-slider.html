@@ -61,6 +61,10 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         /* 전체화면 모드 대응 */
@@ -120,12 +124,21 @@
             align-items: center;
             justify-content: space-between;
             gap: 15px;
+            flex-wrap: wrap;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             color: white;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             opacity: 0;
             transform: translateY(20px);
             pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            #hud-menu {
+                justify-content: center;
+                padding: 15px;
+                gap: 10px;
+            }
         }
         #player-wrapper:fullscreen #hud-menu {
             bottom: 24px;
@@ -722,9 +735,11 @@
             const centralBtn = document.getElementById('central-play-btn');
             if (state.isPlaying) {
                 centralBtn.classList.add('hidden');
+                // 한 번이라도 재생되면 다시는 보이게 하지 않기 위해 style.display를 'none'으로 확실히 처리
+                setTimeout(() => { if (centralBtn.classList.contains('hidden')) centralBtn.style.display = 'none'; }, 400);
                 nextSlide();
             } else {
-                centralBtn.classList.remove('hidden');
+                // 더 이상 중앙 버튼을 보여주지 않음 (기존 centralBtn.classList.remove('hidden') 제거)
                 if (state.timer) clearTimeout(state.timer);
                 progress.style.transition = 'none';
                 progress.style.width = '0%';

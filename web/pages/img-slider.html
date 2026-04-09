@@ -159,20 +159,6 @@
         .hud-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
         .hud-btn.active { color: #6366f1; background: white; }
 
-        /* 중앙 재생 버튼 */
-        #central-play-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 120px; height: 120px; border-radius: 50%;
-            background: rgba(99, 102, 241, 0.9); color: white;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; z-index: 150; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 60px rgba(99, 102, 241, 0.5);
-            border: 4px solid rgba(255,255,255,0.2);
-        }
-        #central-play-btn:hover { transform: translate(-50%, -50%) scale(1.1); background: #6366f1; box-shadow: 0 0 80px rgba(99, 102, 241, 0.8); }
-        #central-play-btn span { font-size: 60px; margin-left: 8px; }
-        #central-play-btn.hidden { opacity: 0; pointer-events: none; transform: translate(-50%, -50%) scale(0.5); }
-        
         .slide-img.paused { animation-play-state: paused !important; }
 
         /* 설정 모달 */
@@ -249,11 +235,6 @@
                             <p id="loading-text" class="text-xs font-bold opacity-70 px-10 text-center leading-relaxed">준비 중...</p>
                         </div>
                         
-                        <!-- 중앙 재생 가이드 -->
-                        <div id="central-play-btn" title="시작하기">
-                            <span class="material-symbols-outlined">play_arrow</span>
-                        </div>
-
                         <div id="progress-bar"></div>
                     </div>
 
@@ -400,7 +381,7 @@
         let state = {
             images: [],
             currentIndex: -1,
-            isPlaying: false, // 이제 수동으로 시작해야 합니다.
+            isPlaying: true, // 페이지 로드 시 자동 재생
             timer: null,
             activeLayer: 'a', // 'a' 또는 'b'
             preloaded: new Set(),
@@ -516,10 +497,7 @@
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.style.display = 'none', 500);
                 
-                // 로딩은 끝났지만, 재생은 사용자가 버튼을 눌러야 시작합니다.
-                updateLoading('준비되었습니다. 하단의 재생 버튼을 눌러 시작하세요.', false);
                 console.log('--- SnapTask Image Slider Ready ---');
-                console.log('이미지 목록 로드 완료. 재생 버튼을 눌러 주십시오.');
                 
                 startSlideshow();
 
@@ -560,10 +538,14 @@
 
         // --- 3. 슬라이드쇼 엔진 ---
         function startSlideshow() {
-            // nextSlide()를 자동으로 호출하지 않습니다.
-            // 버튼 상태를 재생 가능 상태로 확인
-            document.getElementById('play-icon').textContent = 'play_arrow';
-            progress.style.width = '0%';
+            // 목록 로드 후 첫 슬라이드 시작
+            if (state.isPlaying) {
+                document.getElementById('play-icon').textContent = 'pause';
+                nextSlide();
+            } else {
+                document.getElementById('play-icon').textContent = 'play_arrow';
+                progress.style.width = '0%';
+            }
         }
 
         function nextSlide() {
@@ -583,9 +565,19 @@
             if (!file) return '';
             if (file.type === 'local') return file.objectURL;
             
-            // 1. 구글 썸네일 서비스 (가장 안정적이고 CORS에 강함)
-            // sz=w1600 파라미터로 대형 이미지를 요청할 수 있으며, API 키가 필요 없는 경우가 많아 할당량 절약 가능
-            return `https://drive.google.com/thumbnail?id=${file.id}&sz=w1600`;
+            // 1. LH3 CDN 방식 (가장 안정적이고 로컬/브라우저 환경에서 차단될 확률이 낮음)
+            // 이 주소는 구글의 다양한 서비스에서 썸네일을 직접 로드할 때 사용하는 고성능 CDN 도메인입니다.
+            const lh3Url = `https://lh3.googleusercontent.com/d/${file.id}=s1600`;
+            if (lh3Url) return lh3Url; // 기본적으로 이를 사용
+            
+            // 2. API에서 제공한 thumbnailLink 활용 (백업 1)
+            // 기본은 220px 정도이므로 뒤의 s220 등을 s1600으로 교체하여 고해상도로 요청합니다.
+            if (file.thumbnailLink) {
+                return file.thumbnailLink.replace(/=s\d+$/, '=s1600');
+            }
+
+            // 3. 구글 문서 썸네일 서비스 (백업 2)
+            return `https://drive.google.com/thumbnail?id=${file.id}&sz=s1600`;
         }
 
         async function preloadNextImages(index) {
@@ -605,17 +597,13 @@
         }
 
         async function analyzeError(url, fileName) {
-            console.warn(`[디버그] 이미지 로드 실패 상세 분석 시도: ${fileName}`);
-            try {
-                // Fetch로 실제 응답 코드 확인 시도 (CORS 제한이 있을 수 있으나 에러 타입 확인 가능)
-                const response = await fetch(url, { method: 'GET', mode: 'no-cors' });
-                console.log(`[디버그] 네트워크 응답 유형: ${response.type}`);
-            } catch (e) {
-                console.error(`[디버그] 네트워크 요청 자체 실패: 
-                1. 인터넷 연결 확인
-                2. 구글 측의 일시적 차단 (Hotlinking 등)
-                3. 해당 파일의 공유 권한이 해제되었는지 확인`, e);
-            }
+            console.warn(`[디버그] 이미지 로드 실패 상세 분석: ${fileName}`);
+            console.log(`[디버그] 실패한 URL: ${url}`);
+            console.error(`[디버그] 이미지 로딩 문제 해결 가이드:
+            1. 인터넷 연결 및 구글 드라이브 접속 확인
+            2. 해당 파일/폴더의 공유 권한이 '링크가 있는 모든 사용자'로 되어 있는지 확인
+            3. 브라우저의 '서드파티 쿠키 차단' 설정 해제 시도
+            4. 시크릿 모드(Incognito)에서 실행 확인`);
         }
 
         async function showImage(index) {
@@ -732,14 +720,9 @@
             state.isPlaying = !state.isPlaying;
             document.getElementById('play-icon').textContent = state.isPlaying ? 'pause' : 'play_arrow';
             
-            const centralBtn = document.getElementById('central-play-btn');
             if (state.isPlaying) {
-                centralBtn.classList.add('hidden');
-                // 한 번이라도 재생되면 다시는 보이게 하지 않기 위해 style.display를 'none'으로 확실히 처리
-                setTimeout(() => { if (centralBtn.classList.contains('hidden')) centralBtn.style.display = 'none'; }, 400);
                 nextSlide();
             } else {
-                // 더 이상 중앙 버튼을 보여주지 않음 (기존 centralBtn.classList.remove('hidden') 제거)
                 if (state.timer) clearTimeout(state.timer);
                 progress.style.transition = 'none';
                 progress.style.width = '0%';
@@ -748,9 +731,6 @@
             // 스크롤 애니메이션 상태 실시간 업데이트 (일시정지 시 스크롤도 멈춤)
             applyLiveStyles();
         }
-
-        // 중앙 버튼 클릭 이벤트
-        document.getElementById('central-play-btn').addEventListener('click', togglePlay);
 
         // --- 4. 유틸리티 및 UI 이벤트 ---
         function shuffleArray(array) {
@@ -1076,19 +1056,6 @@
                 document.exitFullscreen();
             }
         });
-
-        // 슬라이드 이동 함수 (복구)
-        function nextSlide() {
-            if (state.images.length === 0) return;
-            state.currentIndex = (state.currentIndex + 1) % state.images.length;
-            showImage(state.currentIndex);
-        }
-
-        function prevSlide() {
-            if (state.images.length === 0) return;
-            state.currentIndex = (state.currentIndex - 1 + state.images.length) % state.images.length;
-            showImage(state.currentIndex);
-        }
 
         // 초기 실행
         document.addEventListener('DOMContentLoaded', () => {

@@ -146,6 +146,22 @@
         .hud-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
         .hud-btn.active { color: #6366f1; background: white; }
 
+        /* 중앙 재생 버튼 */
+        #central-play-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 120px; height: 120px; border-radius: 50%;
+            background: rgba(99, 102, 241, 0.9); color: white;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 150; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 60px rgba(99, 102, 241, 0.5);
+            border: 4px solid rgba(255,255,255,0.2);
+        }
+        #central-play-btn:hover { transform: translate(-50%, -50%) scale(1.1); background: #6366f1; box-shadow: 0 0 80px rgba(99, 102, 241, 0.8); }
+        #central-play-btn span { font-size: 60px; margin-left: 8px; }
+        #central-play-btn.hidden { opacity: 0; pointer-events: none; transform: translate(-50%, -50%) scale(0.5); }
+        
+        .slide-img.paused { animation-play-state: paused !important; }
+
         /* 설정 모달 */
         #settings-modal {
             display: none; position: absolute; inset: 0; z-index: 300;
@@ -219,6 +235,12 @@
                             </div>
                             <p id="loading-text" class="text-xs font-bold opacity-70 px-10 text-center leading-relaxed">준비 중...</p>
                         </div>
+                        
+                        <!-- 중앙 재생 가이드 -->
+                        <div id="central-play-btn" title="시작하기">
+                            <span class="material-symbols-outlined">play_arrow</span>
+                        </div>
+
                         <div id="progress-bar"></div>
                     </div>
 
@@ -252,10 +274,19 @@
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 <span class="text-[9px] font-black opacity-30 uppercase">표시</span>
-                                <select id="hud-fit" class="bg-white/10 border-none rounded-lg px-1 py-0.5 text-[10px] focus:ring-1 focus:ring-primary outline-none cursor-pointer">
-                                    <option value="contain" class="bg-neutral-900">채우기</option>
-                                    <option value="cover-width" class="bg-neutral-900">너비맞춤 ↓스크롤</option>
+                                <select id="hud-fit" class="bg-white/10 border-none rounded-lg px-2 py-0.5 text-[10px] focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+                                    <option value="contain" class="bg-neutral-900">비율맞춤</option>
+                                    <option value="cover-width" class="bg-neutral-900">너비맞춤</option>
                                 </select>
+                            </div>
+                            <div id="scroll-toggle-container" class="flex items-center gap-2 shrink-0">
+                                <span class="text-[9px] font-black opacity-30 uppercase">스크롤</span>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" id="hud-scroll" class="hidden peer" checked>
+                                    <div class="w-7 h-4 bg-white/10 rounded-full relative peer-checked:bg-primary transition-colors">
+                                        <div class="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-3 shadow-sm"></div>
+                                    </div>
+                                </label>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 <span class="text-[9px] font-black opacity-30 uppercase">효과</span>
@@ -369,7 +400,8 @@
                 transition: localStorage.getItem('slider_transition') || 'fade',
                 fit: localStorage.getItem('slider_fit') || 'contain',
                 shuffle: localStorage.getItem('slider_shuffle') !== 'false',
-                isPinned: localStorage.getItem('slider_pinned') === 'true'
+                isPinned: localStorage.getItem('slider_pinned') === 'true',
+                useScroll: localStorage.getItem('slider_use_scroll') !== 'false'
             }
         };
 
@@ -623,7 +655,7 @@
                 
                 // 너비 맞춤일 때 자동 수직 패닝 적용
                 if (state.settings.fit === 'cover-width') {
-                    // 강제 재시작 트리거
+                    // 강제 재시작 트리거 (새 이미지는 무조건 위쪽부터 시작하게 함)
                     nextImgEl.style.animation = 'none';
                     void nextImgEl.offsetWidth;
                     nextImgEl.style.animation = '';
@@ -631,8 +663,13 @@
                     nextImgEl.style.setProperty('--pan-animation-name', 'pan-vertical');
                     nextImgEl.style.setProperty('--pan-duration', `${state.settings.interval + 2}s`);
                     nextImgEl.classList.add('panning');
+                    
+                    // 현재 스크롤 설정 반영
+                    if (!state.settings.useScroll) {
+                        nextImgEl.classList.add('paused');
+                    }
                 } else {
-                    nextImgEl.classList.remove('panning');
+                    nextImgEl.classList.remove('panning', 'paused');
                 }
 
                 // 전환 효과 (Active 레이어)
@@ -681,14 +718,21 @@
         function togglePlay() {
             state.isPlaying = !state.isPlaying;
             document.getElementById('play-icon').textContent = state.isPlaying ? 'pause' : 'play_arrow';
+            
+            const centralBtn = document.getElementById('central-play-btn');
             if (state.isPlaying) {
+                centralBtn.classList.add('hidden');
                 nextSlide();
             } else {
+                centralBtn.classList.remove('hidden');
                 if (state.timer) clearTimeout(state.timer);
                 progress.style.transition = 'none';
                 progress.style.width = '0%';
             }
         }
+
+        // 중앙 버튼 클릭 이벤트
+        document.getElementById('central-play-btn').addEventListener('click', togglePlay);
 
         // --- 4. 유틸리티 및 UI 이벤트 ---
         function shuffleArray(array) {
@@ -739,12 +783,26 @@
         const hudFit = document.getElementById('hud-fit');
         const hudTransition = document.getElementById('hud-transition');
         const hudShuffle = document.getElementById('hud-shuffle');
+        const hudScroll = document.getElementById('hud-scroll');
 
         function syncHUD() {
             hudInterval.value = state.settings.interval;
             hudFit.value = state.settings.fit;
             hudTransition.value = state.settings.transition;
             hudShuffle.checked = state.settings.shuffle;
+            hudScroll.checked = state.settings.useScroll;
+            updateFitControls();
+        }
+
+        function updateFitControls() {
+            const scrollContainer = document.getElementById('scroll-toggle-container');
+            if (state.settings.fit === 'cover-width') {
+                scrollContainer.style.opacity = '1';
+                scrollContainer.style.pointerEvents = 'auto';
+            } else {
+                scrollContainer.style.opacity = '0.3';
+                scrollContainer.style.pointerEvents = 'none';
+            }
         }
 
         hudInterval.addEventListener('change', () => {
@@ -756,17 +814,13 @@
         hudFit.addEventListener('change', () => {
             state.settings.fit = hudFit.value;
             localStorage.setItem('slider_fit', state.settings.fit);
+            updateFitControls();
             applyLiveStyles();
         });
 
-        hudTransition.addEventListener('change', () => {
-            state.settings.transition = hudTransition.value;
-            localStorage.setItem('slider_transition', state.settings.transition);
-        });
-
-        hudFit.addEventListener('change', () => {
-            state.settings.fit = hudFit.value;
-            localStorage.setItem('slider_fit', state.settings.fit);
+        hudScroll.addEventListener('change', () => {
+            state.settings.useScroll = hudScroll.checked;
+            localStorage.setItem('slider_use_scroll', state.settings.useScroll);
             applyLiveStyles();
         });
 
@@ -786,11 +840,14 @@
             currentImgEl.className = `slide-img active fit-${state.settings.fit}`;
             
             if (state.settings.fit === 'cover-width') {
-                currentImgEl.style.setProperty('--pan-animation-name', 'pan-vertical');
-                currentImgEl.style.setProperty('--pan-duration', `${state.settings.interval + 2}s`);
                 currentImgEl.classList.add('panning');
+                if (!state.settings.useScroll) {
+                    currentImgEl.classList.add('paused');
+                } else {
+                    currentImgEl.classList.remove('paused');
+                }
             } else {
-                currentImgEl.classList.remove('panning');
+                currentImgEl.classList.remove('panning', 'paused');
             }
         }
 

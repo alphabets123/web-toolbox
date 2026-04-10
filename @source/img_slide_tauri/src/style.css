@@ -1,0 +1,265 @@
+/* SnapTask Image Slider - Tauri 전용 스타일 (웹 버전 기반 재작성) */
+
+body {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    background: #000;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 플레이어 */
+#player-wrapper {
+    position: relative;
+    background: #000;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#slider-view {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* 이미지 */
+.slide-img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out, transform 1.5s ease-in-out;
+    pointer-events: none;
+    display: block;
+    z-index: 10;
+}
+
+.slide-img.active {
+    opacity: 1;
+    z-index: 11;
+    transform: scale(1) translateY(0);
+}
+
+.fit-contain { object-fit: contain; width: 100%; height: 100%; }
+.fit-cover-width { object-fit: cover; width: 100%; height: 100%; }
+
+/* 전환 효과 */
+.effect-zoomIn { opacity: 0; transform: scale(1.2); }
+.effect-zoomIn.active { opacity: 1; transform: scale(1); }
+
+.effect-zoomOut { opacity: 0; transform: scale(0.8); }
+.effect-zoomOut.active { opacity: 1; transform: scale(1); }
+
+.effect-slideUp { opacity: 0; transform: translateY(20%); }
+.effect-slideUp.active { opacity: 1; transform: translateY(0); }
+
+/* 패닝 */
+@keyframes pan-vertical {
+    from { object-position: center top; }
+    to   { object-position: center bottom; }
+}
+
+.slide-img.panning {
+    animation-name: var(--pan-animation-name);
+    animation-duration: var(--pan-duration);
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: both;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    z-index: 12;
+}
+
+.slide-img.paused {
+    animation-play-state: paused !important;
+}
+
+/* HUD 메뉴 */
+#hud-menu {
+    position: absolute;
+    bottom: 24px; left: 24px; right: 24px;
+    z-index: 100;
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    color: white;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+#hud-menu.visible, #hud-menu.pinned {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* 스크롤바 숨김 */
+#hud-menu .overflow-x-auto::-webkit-scrollbar { display: none; }
+#hud-menu .overflow-x-auto { -ms-overflow-style: none; scrollbar-width: none; }
+
+.hud-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.1);
+    border: none; color: white;
+    cursor: pointer; transition: all 0.2s;
+}
+
+.hud-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.1);
+}
+
+.hud-btn.active {
+    color: #6366f1;
+    background: white;
+}
+
+/* 프로그레스 바 */
+#progress-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 4px;
+    background: #6366f1;
+    opacity: 0.6;
+    width: 0%;
+    z-index: 150;
+}
+
+/* 로딩 오버레이 */
+#loading-overlay {
+    z-index: 20;
+    transition: opacity 0.5s ease;
+}
+
+/* 설정 모달 */
+#settings-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+}
+
+#settings-modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 32px;
+    border-radius: 32px;
+    width: 90%;
+    max-width: 550px;
+    max-height: 85vh;
+    overflow-y: auto;
+    color: #191c1e;
+}
+
+/* 토글 스위치 (웹 버전과 동일한 peer 기반) */
+.toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.toggle-cb {
+    display: none;
+}
+
+.toggle-track {
+    width: 40px; height: 20px;
+    background: #e2e8f0;
+    border-radius: 20px;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.toggle-cb:checked + .toggle-track {
+    background: #6366f1;
+}
+
+.toggle-thumb {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toggle-cb:checked + .toggle-track .toggle-thumb {
+    transform: translateX(20px);
+}
+
+/* 폴더 아이템 */
+.folder-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.folder-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.folder-input:disabled {
+    opacity: 0.5;
+}
+
+.remove-btn {
+    color: #f43f5e;
+    opacity: 0.5;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.remove-btn:hover {
+    opacity: 1;
+}

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapTask Image Slider - Local</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖼️</text></svg>">
+    <script src="tailwindcss.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366f1",
+                        "secondary": "#a855f7",
+                        "on-surface": "#191c1e",
+                        "on-surface-variant": "#464554",
+                        "surface-container": "#eceef0",
+                        "background": "#f8fafc"
+                    }
+                }
+            }
+        }
+    </script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="min-h-screen bg-black flex flex-col overflow-hidden">
+    <div id="player-wrapper" class="group">
+        <div id="slider-view">
+            <div class="image-container">
+                <img id="img-a" class="slide-img" src="" alt="">
+                <img id="img-b" class="slide-img" src="" alt="">
+            </div>
+
+            <div id="loading-overlay"
+                class="absolute inset-0 flex flex-col items-center justify-center text-white bg-black z-20 transition-opacity duration-500">
+                <div id="loading-spinner" class="animate-spin text-primary mb-4">
+                    <span class="material-symbols-outlined text-4xl">sync</span>
+                </div>
+                <p id="loading-text" class="text-xs font-bold opacity-70 px-10 text-center leading-relaxed">
+                    준비를 시작합니다...</p>
+                <button id="error-refresh-btn"
+                    class="mt-6 px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-xs font-bold transition-all hidden"
+                    onclick="location.reload()">
+                    새로고침
+                </button>
+            </div>
+
+            <div id="progress-bar"></div>
+        </div>
+
+        <div id="hud-menu">
+            <div class="flex items-center gap-4 flex-1 min-w-0">
+                <div class="flex items-center bg-black/20 rounded-xl px-1 shrink-0">
+                    <button id="prev-btn" class="hud-btn" title="이전"><span
+                            class="material-symbols-outlined text-sm">skip_previous</span></button>
+                    <button id="play-pause-btn" class="hud-btn !bg-white !text-black" title="재생/일시정지"><span
+                            id="play-icon" class="material-symbols-outlined text-sm">pause</span></button>
+                    <button id="next-btn" class="hud-btn" title="다음"><span
+                            class="material-symbols-outlined text-sm">skip_next</span></button>
+                </div>
+                <div class="flex flex-col min-w-0 flex-1">
+                    <div class="overflow-x-auto whitespace-nowrap"
+                        style="-ms-overflow-style: none; scrollbar-width: none;">
+                        <span id="current-info" class="text-xs font-black inline-block pr-4">명화 감상</span>
+                    </div>
+                    <div id="source-container" class="flex items-center gap-1.5 opacity-50">
+                        <span id="source-icon" class="material-symbols-outlined text-[11px]">cloud</span>
+                        <span id="source-name"
+                            class="text-[9px] font-bold tracking-wider uppercase truncate">명화 컬렉션</span>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="flex flex-wrap lg:flex-nowrap items-center gap-4 bg-white/5 px-4 py-1.5 rounded-xl border border-white/10 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-[9px] font-black opacity-30 uppercase">간격</span>
+                    <input type="number" id="hud-interval"
+                        class="w-10 bg-white/10 border-none rounded-lg px-1 py-0.5 text-[10px] text-center focus:ring-1 focus:ring-primary outline-none"
+                        value="20">
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-[9px] font-black opacity-30 uppercase">표시</span>
+                    <select id="hud-fit"
+                        class="bg-white/10 border-none rounded-lg px-2 py-0.5 text-[10px] focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+                        <option value="contain" class="bg-neutral-900">비율맞춤</option>
+                        <option value="cover-width" class="bg-neutral-900">너비맞춤</option>
+                    </select>
+                </div>
+                <div id="scroll-toggle-container" class="flex items-center gap-2 shrink-0">
+                    <span class="text-[9px] font-black opacity-30 uppercase">스크롤</span>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="hud-scroll" class="hidden peer" checked>
+                        <div class="w-7 h-4 bg-white/10 rounded-full relative peer-checked:bg-primary transition-colors">
+                            <div class="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-3 shadow-sm"></div>
+                        </div>
+                    </label>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-[9px] font-black opacity-30 uppercase">효과</span>
+                    <select id="hud-transition"
+                        class="bg-white/10 border-none rounded-lg px-1 py-0.5 text-[10px] focus:ring-1 focus:ring-primary outline-none cursor-pointer">
+                        <option value="fade" class="bg-neutral-900">페이드</option>
+                        <option value="zoomIn" class="bg-neutral-900">줌 인</option>
+                        <option value="zoomOut" class="bg-neutral-900">줌 아웃</option>
+                        <option value="slideUp" class="bg-neutral-900">슬라이드 업</option>
+                        <option value="random" class="bg-neutral-900">랜덤 효과</option>
+                    </select>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer shrink-0">
+                    <input type="checkbox" id="hud-shuffle" class="hidden peer">
+                    <div class="w-6 h-3 bg-white/20 rounded-full relative peer-checked:bg-primary transition-colors">
+                        <div class="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full transition-transform peer-checked:translate-x-3"></div>
+                    </div>
+                    <span class="text-[9px] font-bold opacity-40">무작위</span>
+                </label>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="pin-btn" class="hud-btn" title="HUD 고정"><span
+                        class="material-symbols-outlined text-sm">keep</span></button>
+                <button id="settings-btn" class="hud-btn" title="폴더 설정"><span
+                        class="material-symbols-outlined text-sm">folder_managed</span></button>
+                <button id="fullscreen-btn" class="hud-btn" title="전체화면"><span
+                        class="material-symbols-outlined text-sm">fullscreen</span></button>
+                <button id="exit-btn-hud" class="hud-btn !bg-red-500/20 !text-red-400" title="종료"><span
+                        class="material-symbols-outlined text-sm">close</span></button>
+            </div>
+        </div>
+
+        <!-- 설정 모달 -->
+        <div id="settings-modal">
+            <div class="modal-content shadow-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-on-surface">슬라이더 설정 (로컬)</h2>
+                    <button id="close-settings" class="text-on-surface-variant hover:text-on-surface">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- 전체화면 부팅 옵션 -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-bold text-on-surface">전체화면으로 시작</p>
+                            <p class="text-[10px] text-on-surface-variant opacity-60">앱 실행 시 즉시 전체화면으로 전환합니다.</p>
+                        </div>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="setting-fullscreen-start" class="toggle-cb">
+                            <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                        </label>
+                    </div>
+
+                    <!-- 구글 드라이브 폴더 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <label class="text-xs font-black text-on-surface-variant uppercase tracking-widest">Google Drive IDs</label>
+                            <button id="add-folder-btn" class="text-xs font-black text-primary hover:underline flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px]">add_circle</span> 추가
+                            </button>
+                        </div>
+                        <div id="folder-list" class="space-y-2 max-h-[250px] overflow-y-auto pr-2" style="scrollbar-width: thin;"></div>
+                    </div>
+
+                    <!-- 로컬 폴더 -->
+                    <div class="pt-6 border-t border-slate-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <label class="text-xs font-black text-on-surface-variant uppercase tracking-widest">PC 이미지 폴더</label>
+                            <button id="add-local-folder-btn" class="text-xs font-black text-primary hover:underline flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px]">add_circle</span> 폴더 선택
+                            </button>
+                        </div>
+                        <div id="local-folder-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-2" style="scrollbar-width: thin;"></div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button id="save-settings-btn"
+                            class="w-full py-4 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all">
+                            재생 목록 갱신 및 닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>

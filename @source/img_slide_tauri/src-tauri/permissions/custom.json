@@ -1,0 +1,13 @@
+{
+  "identifier": "allow-custom-commands",
+  "description": "Permissions for custom commands",
+  "commands": {
+    "allow": [
+      "get_local_images",
+      "save_settings",
+      "load_settings",
+      "set_fullscreen",
+      "exit_app"
+    ]
+  }
+}

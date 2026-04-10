@@ -346,7 +346,7 @@
 
                 <div class="mt-8 pt-6 border-t border-slate-100">
                     <div class="flex justify-between items-center mb-4">
-                        <label class="text-xs font-black text-on-surface-variant uppercase tracking-widest">내 PC 사진 재생 (이번 세션 한정)</label>
+                        <label class="text-xs font-black text-on-surface-variant uppercase tracking-widest">PC 이미지 재생</label>
                         <button id="add-local-folder-btn" class="text-xs font-black text-primary hover:underline flex items-center gap-1">
                             <span class="material-symbols-outlined text-[16px]">add_circle</span> PC 폴더 추가
                         </button>
@@ -382,7 +382,7 @@
         
         // --- 1. 상태 및 설정 관리 ---
         const DEFAULT_API_KEY = "AIzaSyDmj2GWjxJ_ngeXkNUes6iBk-dz1MrGFus";
-        const DEFAULT_FOLDER_ID = "SnapTask 기본 명화 이미지|1GGclR62dPOzW38k7YJ9XZ9WfAcCbD8eQ|1";
+        const DEFAULT_FOLDER_ID = "기본명화이미지(test용)|1GGclR62dPOzW38k7YJ9XZ9WfAcCbD8eQ|1";
 
         const hud = document.getElementById('hud-menu');
         const overlay = document.getElementById('loading-overlay');
@@ -485,6 +485,12 @@
                             folderId = parts[0].trim();
                         }
                         
+                        // 기존 "SnapTask" 명칭이 포함된 경우 새로운 명칭으로 자동 전환 (마이그레이션)
+                        const defId = "1GGclR62dPOzW38k7YJ9XZ9WfAcCbD8eQ";
+                        if (folderId === defId && (title.includes("SnapTask") || !title)) {
+                            title = "기본명화이미지(test용)";
+                        }
+
                         if (!folderId || !isEnabled) continue; // 토글 꺼진 폴더는 스킵
                         
                         const folderFiles = await fetchFilesRecursive(folderId);
@@ -917,6 +923,11 @@
                     title = '커스텀 폴더'; folderId = parts[0]; isEnabled = parts[1] === '1';
                 } else {
                     title = '커스텀 폴더'; folderId = parts[0]; isEnabled = true;
+                }
+                
+                // 이전 명칭(SnapTask)인 경우 자동으로 새로운 명칭으로 변경하여 표시
+                if (folderId === defId && (title.includes("SnapTask") || !title)) {
+                    title = "기본명화이미지(test용)";
                 }
                 
                 const isFirstLocked = (index === 0 && folderId === defId);

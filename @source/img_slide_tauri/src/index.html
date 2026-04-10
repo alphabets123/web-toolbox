@@ -144,6 +144,15 @@
                 </div>
 
                 <div class="space-y-6">
+                    <!-- API Key 설정 (숨김 처리) -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
+                        <label class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1">Google API Key</label>
+                        <input type="password" id="setting-api-key" 
+                            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:border-primary outline-none transition-all"
+                            placeholder="본인의 구글 API 키를 입력하세요 (비워두면 기본값 사용)">
+                        <p class="text-[9px] text-on-surface-variant opacity-50 mt-1">* 기본 키와 다를 경우에만 설정 파일에 저장됩니다.</p>
+                    </div>
+
                     <!-- 전체화면 부팅 옵션 -->
                     <div id="fs-start-box" class="p-4 rounded-2xl flex items-center gap-4">
                         <label class="premium-switch">

@@ -87,17 +87,33 @@ async function loadSettings() {
         const raw = await invoke('load_settings');
         const saved = JSON.parse(raw);
         state.settings = { ...state.settings, ...saved };
+        console.log('Settings successfully loaded:', state.settings);
     } catch (e) {
-        if (e !== 'NOT_FOUND') console.warn('Settings load:', e);
+        if (e === 'NOT_FOUND') {
+            console.log('Settings file not found. Initializing with defaults...');
+            await saveSettings();
+        } else {
+            console.error('Failed to load settings:', e);
+            // alert('설정을 불러오지 못했습니다: ' + e);
+        }
     }
     syncHUD();
 }
 
 async function saveSettings() {
     try {
-        if (invoke) await invoke('save_settings', { settings: JSON.stringify(state.settings) });
+        if (invoke) {
+            // 보안: 기본 API 키와 같으면 파일에 저장하지 않음
+            const settingsToSave = { ...state.settings };
+            if (settingsToSave.apiKey === DEFAULT_API_KEY) {
+                delete settingsToSave.apiKey;
+            }
+
+            await invoke('save_settings', { settings: JSON.stringify(settingsToSave) });
+            console.log('Settings saved (Sensitive info masked if default).');
+        }
     } catch (e) {
-        console.error('Settings save:', e);
+        console.error('Failed to save settings:', e);
     }
 }
 
@@ -233,9 +249,15 @@ function setupEvents() {
     });
 
     // 설정 모달
-    el('settings-btn')?.addEventListener('click', () => el('settings-modal')?.classList.add('active'));
+    el('settings-btn')?.addEventListener('click', () => {
+        if (el('setting-api-key')) el('setting-api-key').value = state.settings.apiKey;
+        el('settings-modal')?.classList.add('active');
+    });
     el('close-settings')?.addEventListener('click', () => el('settings-modal')?.classList.remove('active'));
     el('save-settings-btn')?.addEventListener('click', async () => {
+        const newApiKey = el('setting-api-key')?.value;
+        if (newApiKey) state.settings.apiKey = newApiKey;
+        
         el('settings-modal')?.classList.remove('active');
         // 슬라이더 리셋 및 재시작
         if (state.timer) clearTimeout(state.timer);
@@ -302,6 +324,8 @@ async function fetchImages() {
             const title = parts[0].trim();
             const folderId = parts[1].trim();
             const isEnabled = parts.length >= 3 ? parts[2] === '1' : true;
+            
+            console.log(`GDrive entry: ${title}, isEnabled: ${isEnabled}`);
             if (!isEnabled || !folderId) continue;
 
             loadingText.textContent = `구글 드라이브: ${title} 읽는 중...`;
@@ -569,11 +593,16 @@ function renderFolderLists() {
             `;
             div.querySelector('.toggle-cb')?.addEventListener('change', (e) => {
                 updateGDriveEntry(idx, 'enabled', e.target.checked);
+                saveSettings(); // 즉시 저장
             });
             div.querySelector('.folder-input')?.addEventListener('change', (e) => {
                 updateGDriveEntry(idx, 'name', e.target.value);
+                saveSettings(); // 즉시 저장
             });
-            div.querySelector('.remove-btn')?.addEventListener('click', () => removeGDriveEntry(idx));
+            div.querySelector('.remove-btn')?.addEventListener('click', () => {
+                removeGDriveEntry(idx);
+                saveSettings(); // 즉시 저장
+            });
             gList.appendChild(div);
         });
     }
@@ -598,12 +627,12 @@ function renderFolderLists() {
                 `;
                 div.querySelector('.toggle-cb')?.addEventListener('change', (e) => {
                     state.settings.localFolders[idx].isEnabled = e.target.checked;
-                    saveSettings();
+                    saveSettings(); // 즉시 저장
                 });
                 div.querySelector('.remove-btn')?.addEventListener('click', () => {
                     state.settings.localFolders.splice(idx, 1);
                     renderFolderLists();
-                    saveSettings();
+                    saveSettings(); // 즉시 저장
                 });
                 lList.appendChild(div);
             });

@@ -25,7 +25,9 @@ let state = {
         isPinned: false,
         useScroll: true,
         fullscreen: false
-    }
+    },
+    cursorTimer: null,
+    hudTimer: null
 };
 
 let invoke = null;
@@ -57,6 +59,14 @@ async function initApp() {
 
         // 이벤트 등록
         setupEvents();
+
+        // 전체화면 부팅 체크
+        if (state.settings.fullscreen) {
+            try {
+                const win = window.__TAURI__.window.getCurrentWindow();
+                await win.setFullscreen(true);
+            } catch (e) { console.warn('Auto fullscreen failed:', e); }
+        }
 
         // 이미지 목록 로드
         await fetchImages();
@@ -107,7 +117,19 @@ function syncHUD() {
         el('pin-btn')?.classList.add('active');
     }
 
+    updateFitControls();
     renderFolderLists();
+}
+
+function updateFitControls() {
+    const scrollLabel = document.getElementById('hud-scroll-label');
+    if (!scrollLabel) return;
+    
+    if (state.settings.fit === 'cover-width') {
+        scrollLabel.classList.remove('disabled');
+    } else {
+        scrollLabel.classList.add('disabled');
+    }
 }
 
 // --- 이벤트 등록 ---
@@ -133,6 +155,8 @@ function setupEvents() {
     // HUD 컨트롤
     el('hud-interval')?.addEventListener('change', (e) => {
         state.settings.interval = parseInt(e.target.value) || 20;
+        resetTimer();
+        startProgressBar();
         saveSettings();
     });
     el('hud-transition')?.addEventListener('change', (e) => {
@@ -141,18 +165,21 @@ function setupEvents() {
     });
     el('hud-fit')?.addEventListener('change', (e) => {
         state.settings.fit = e.target.value;
+        updateFitControls();
+        applyLiveStyles();
         saveSettings();
     });
     el('hud-shuffle')?.addEventListener('change', (e) => {
         state.settings.shuffle = e.target.checked;
-        saveSettings();
         if (state.images.length > 0) {
             if (state.settings.shuffle) shuffleArray(state.images);
             else state.images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
         }
+        saveSettings();
     });
     el('hud-scroll')?.addEventListener('change', (e) => {
         state.settings.useScroll = e.target.checked;
+        applyLiveStyles();
         saveSettings();
     });
     el('setting-fullscreen-start')?.addEventListener('change', (e) => {
@@ -175,9 +202,28 @@ function setupEvents() {
             const win = window.__TAURI__.window.getCurrentWindow();
             const isFull = await win.isFullscreen();
             await win.setFullscreen(!isFull);
-            el('fullscreen-btn')?.classList.toggle('active', !isFull);
+            
+            // UI 업데이트
+            updateFullscreenUI(!isFull);
         } catch (e) {
-            console.error('Fullscreen:', e);
+            console.error('Fullscreen Error:', e);
+        }
+    });
+
+    // 전체화면 상태 감시 (F11 등으로 변경될 경우 대비)
+    try {
+        const win = window.__TAURI__.window.getCurrentWindow();
+        win.onResized(async () => {
+            const isFull = await win.isFullscreen();
+            updateFullscreenUI(isFull);
+        });
+    } catch (e) {}
+
+    // 마우스 이동 감지 (커서 숨김 및 HUD 타이머 갱신용)
+    document.addEventListener('mousemove', () => {
+        resetCursorTimer();
+        if (document.getElementById('hud-menu')?.classList.contains('visible')) {
+            resetHUDTimer();
         }
     });
 
@@ -226,9 +272,13 @@ function setupEvents() {
 
     // HUD 토글 (빈 영역 클릭)
     document.addEventListener('click', (e) => {
-        if (e.target.closest('#hud-menu') || e.target.closest('#settings-modal')) return;
+        if (e.target.closest('#hud-menu') || e.target.closest('#settings-modal')) {
+            resetHUDTimer(); // HUD 내부 클릭 시에도 타이머 갱신
+            return;
+        }
         const hud = el('hud-menu');
-        hud?.classList.toggle('visible');
+        const isVisible = hud?.classList.toggle('visible');
+        if (isVisible) resetHUDTimer();
     });
 }
 
@@ -422,6 +472,72 @@ function resetTimer() {
     }
 }
 
+function updateFullscreenUI(isFull) {
+    const btn = document.getElementById('fullscreen-btn');
+    const icon = btn?.querySelector('.material-symbols-outlined');
+    if (btn) btn.classList.toggle('active', isFull);
+    if (icon) icon.textContent = isFull ? 'fullscreen_exit' : 'fullscreen';
+    
+    if (!isFull) {
+        resetCursorTimer(true); // 전체화면 해제 시 커서 항상 표시
+    }
+}
+
+function resetCursorTimer(forceShow = false) {
+    // 커서 표시
+    document.body.classList.remove('cursor-hidden');
+    if (state.cursorTimer) clearTimeout(state.cursorTimer);
+
+    if (forceShow) return;
+
+    // 전체화면일 때만 1초 뒤 숨김 타이머 작동
+    const checkFullscreen = async () => {
+        try {
+            const win = window.__TAURI__.window.getCurrentWindow();
+            if (await win.isFullscreen()) {
+                state.cursorTimer = setTimeout(() => {
+                    document.body.classList.add('cursor-hidden');
+                }, 1000);
+            }
+        } catch (e) {}
+    };
+    checkFullscreen();
+}
+
+function resetHUDTimer() {
+    if (state.hudTimer) clearTimeout(state.hudTimer);
+
+    // 고정(핀) 상태이거나 설정창이 열려 있으면 자동 숨김 안 함
+    if (state.settings.isPinned || document.getElementById('settings-modal')?.classList.contains('active')) {
+        return;
+    }
+
+    state.hudTimer = setTimeout(() => {
+        const hud = document.getElementById('hud-menu');
+        if (hud) hud.classList.remove('visible');
+    }, 10000); // 10초
+}
+
+function applyLiveStyles() {
+    const imgA = document.getElementById('img-a');
+    const imgB = document.getElementById('img-b');
+    [imgA, imgB].forEach(img => {
+        if (!img.classList.contains('active')) return;
+        
+        img.className = `slide-img active fit-${state.settings.fit}`;
+        
+        if (state.settings.fit === 'cover-width') {
+            img.style.setProperty('--pan-duration', `${state.settings.interval + 2}s`);
+            img.style.setProperty('--pan-animation-name', 'pan-vertical');
+            img.classList.add('panning');
+            if (!state.isPlaying || !state.settings.useScroll) img.classList.add('paused');
+            else img.classList.remove('paused');
+        } else {
+            img.classList.remove('panning', 'paused');
+        }
+    });
+}
+
 // --- 유틸리티 ---
 function shuffleArray(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -444,12 +560,12 @@ function renderFolderLists() {
             const div = document.createElement('div');
             div.className = 'folder-item';
             div.innerHTML = `
-                <label class="toggle-label">
+                <label class="premium-switch">
                     <input type="checkbox" class="toggle-cb" ${enabled === '1' ? 'checked' : ''}>
-                    <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                    <div class="sw-track"><div class="sw-thumb"></div></div>
                 </label>
                 <input type="text" class="folder-input" value="${name}" ${isDefault ? 'readonly disabled' : ''}>
-                ${!isDefault ? `<button class="remove-btn" title="삭제"><span class="material-symbols-outlined text-sm">delete</span></button>` : ''}
+                ${!isDefault ? `<button class="remove-btn" title="삭제"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : ''}
             `;
             div.querySelector('.toggle-cb')?.addEventListener('change', (e) => {
                 updateGDriveEntry(idx, 'enabled', e.target.checked);
@@ -473,12 +589,12 @@ function renderFolderLists() {
                 const div = document.createElement('div');
                 div.className = 'folder-item';
                 div.innerHTML = `
-                    <label class="toggle-label">
+                    <label class="premium-switch">
                         <input type="checkbox" class="toggle-cb" ${folder.isEnabled ? 'checked' : ''}>
-                        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                        <div class="sw-track"><div class="sw-thumb"></div></div>
                     </label>
                     <input type="text" class="folder-input" value="${folder.name}" readonly>
-                    <button class="remove-btn" title="삭제"><span class="material-symbols-outlined text-sm">delete</span></button>
+                    <button class="remove-btn" title="삭제"><span class="material-symbols-outlined text-[16px]">delete</span></button>
                 `;
                 div.querySelector('.toggle-cb')?.addEventListener('change', (e) => {
                     state.settings.localFolders[idx].isEnabled = e.target.checked;

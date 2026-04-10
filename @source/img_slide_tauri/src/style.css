@@ -7,6 +7,17 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
+    user-select: none; /* 선택 방지 */
+    -webkit-user-select: none;
+}
+
+img {
+    -webkit-user-drag: none; /* 드래그 방지 */
+}
+
+input, select, textarea {
+    user-select: auto !important; /* 입력 필드는 예외 */
+    -webkit-user-select: auto !important;
 }
 
 /* 플레이어 */
@@ -137,9 +148,24 @@ body {
 }
 
 .hud-btn.active {
-    color: #6366f1;
-    background: white;
+    color: #ffd700; /* 노란색 강조 */
+    background: rgba(255, 215, 0, 0.2);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
 }
+
+#settings-modal .premium-switch input:checked + .sw-track {
+    background: #6366f1; /* 체크 시 보라색으로 변경되도록 보장 */
+}
+
+/* 설정창 가독성 보강 - 다른 항목과 통일 */
+#fs-start-box {
+    background: #f1f5f9; 
+    border: 1px solid #e2e8f0;
+    margin-bottom: 4px;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
 
 /* 프로그레스 바 */
 #progress-bar {
@@ -185,53 +211,63 @@ body {
     color: #191c1e;
 }
 
-/* 토글 스위치 (웹 버전과 동일한 peer 기반) */
-.toggle-label {
-    display: flex;
+/* 터치/클릭 가능한 프리미엄 스위치 (통일) */
+.premium-switch {
+    display: inline-flex;
     align-items: center;
     cursor: pointer;
-    flex-shrink: 0;
+    user-select: none;
+    gap: 8px;
 }
 
-.toggle-cb {
+.premium-switch input {
     display: none;
 }
 
-.toggle-track {
-    width: 40px; height: 20px;
-    background: #e2e8f0;
+.sw-track {
+    width: 28px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     position: relative;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.toggle-cb:checked + .toggle-track {
+.premium-switch input:checked + .sw-track {
     background: #6366f1;
 }
 
-.toggle-thumb {
+.sw-thumb {
     position: absolute;
-    top: 2px; left: 2px;
-    width: 16px; height: 16px;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
     background: white;
     border-radius: 50%;
-    transition: all 0.3s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
-.toggle-cb:checked + .toggle-track .toggle-thumb {
-    transform: translateX(20px);
+.premium-switch input:checked + .sw-track .sw-thumb {
+    transform: translateX(12px);
 }
 
-/* 폴더 아이템 */
+/* 비활성화 상태 */
+.premium-switch.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* 폴더 아이템 슬림화 */
 .folder-item {
     display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 4px;
     align-items: center;
-    background: #f8fafc;
-    padding: 8px 12px;
-    border-radius: 12px;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 8px;
     border: 1px solid #e2e8f0;
 }
 
@@ -240,10 +276,18 @@ body {
     background: transparent;
     border: none;
     outline: none;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #1e293b;
+    padding: 2px 0;
 }
+
+#settings-modal .premium-switch .sw-track {
+    background: #cbd5e1; /* 설정창 내 미체크 시 회색 배경 */
+}
+
+/* 기존 불필요 스타일 제거 */
+.toggle-label, .toggle-cb, .toggle-track, .toggle-thumb { display: none; }
 
 .folder-input:disabled {
     opacity: 0.5;
@@ -262,4 +306,9 @@ body {
 
 .remove-btn:hover {
     opacity: 1;
+}
+
+/* 마우스 숨김 */
+.cursor-hidden, .cursor-hidden * {
+    cursor: none !important;
 }

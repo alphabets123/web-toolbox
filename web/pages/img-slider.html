@@ -83,15 +83,27 @@
             width: 100%;
             height: 100%;
             opacity: 0;
-            transition: opacity 1.5s ease-in-out;
+            transition: opacity 1.5s ease-in-out, transform 1.5s ease-in-out;
             pointer-events: none;
             display: block;
             z-index: 10;
         }
 
-        .slide-img.active { opacity: 1; z-index: 11; }
+        .slide-img.active { opacity: 1; z-index: 11; transform: scale(1) translateY(0); }
         .fit-contain { object-fit: contain; width: 100%; height: 100%; }
         .fit-cover-width { object-fit: cover; width: 100%; height: 100%; }
+
+        /* 전환 효과 클래스 */
+        .effect-fade { opacity: 0; }
+        
+        .effect-zoomIn { opacity: 0; transform: scale(1.2); }
+        .effect-zoomIn.active { opacity: 1; transform: scale(1); }
+
+        .effect-zoomOut { opacity: 0; transform: scale(0.8); }
+        .effect-zoomOut.active { opacity: 1; transform: scale(1); }
+
+        .effect-slideUp { opacity: 0; transform: translateY(20%); }
+        .effect-slideUp.active { opacity: 1; transform: translateY(0); }
 
         /* 패닝 애니메이션 */
         @keyframes pan-vertical {
@@ -289,6 +301,7 @@
                                     <option value="zoomIn" class="bg-neutral-900">줌 인</option>
                                     <option value="zoomOut" class="bg-neutral-900">줌 아웃</option>
                                     <option value="slideUp" class="bg-neutral-900">슬라이드 업</option>
+                                    <option value="random" class="bg-neutral-900">랜덤 효과</option>
                                 </select>
                             </div>
                             <label class="flex items-center gap-2 cursor-pointer shrink-0">
@@ -393,7 +406,7 @@
                 interval: parseInt(localStorage.getItem('slider_interval')) || 20,
                 transition: localStorage.getItem('slider_transition') || 'fade',
                 fit: localStorage.getItem('slider_fit') || 'contain',
-                shuffle: localStorage.getItem('slider_shuffle') !== 'false',
+                shuffle: localStorage.getItem('slider_shuffle') !== 'false', // 기본값: 무작위 재생 켬 (true)
                 isPinned: localStorage.getItem('slider_pinned') === 'true',
                 useScroll: localStorage.getItem('slider_use_scroll') !== 'false'
             }
@@ -488,6 +501,9 @@
                     throw new Error('재생할 이미지가 없습니다. 폴더와 파일, 또는 설정을 확인해주세요.');
                 }
 
+                // 기본적으로 파일명 기준 정렬 (무작위 미적용 시 예측 가능한 순서 보장)
+                allFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+                
                 state.images = allFiles;
                 if (state.settings.shuffle) {
                     shuffleArray(state.images);
@@ -649,9 +665,22 @@
                 // 로딩 오버레이 숨김
                 overlay.style.opacity = '0';
                 setTimeout(() => { if(overlay.style.opacity === '0') overlay.style.display = 'none' }, 500);
+                // 레이어 교체 애니메이션 준비 (효과 클래스 적용)
+                let effect = state.settings.transition;
+                // 랜덤 효과 처리
+                if (effect === 'random') {
+                    const effects = ['fade', 'zoomIn', 'zoomOut', 'slideUp'];
+                    effect = effects[Math.floor(Math.random() * effects.length)];
+                }
 
-                // 레이어 교체 애니메이션
-                nextImgEl.className = `slide-img active fit-${state.settings.fit}`;
+                nextImgEl.className = `slide-img fit-${state.settings.fit}`;
+                if (effect !== 'none' && effect !== 'fade') {
+                    nextImgEl.classList.add(`effect-${effect}`);
+                }
+
+                // 브라우저 리플로우 강제 및 활성화
+                void nextImgEl.offsetWidth;
+                nextImgEl.classList.add('active');
                 currentImgEl.classList.remove('active');
                 
                 // 너비 맞춤일 때 자동 수직 패닝 적용
@@ -671,13 +700,6 @@
                     }
                 } else {
                     nextImgEl.classList.remove('panning', 'paused');
-                }
-
-                // 전환 효과 (Active 레이어)
-                void nextImgEl.offsetWidth;
-                const effect = state.settings.transition;
-                if (effect !== 'none') {
-                    nextImgEl.classList.add(`effect-${effect}`);
                 }
 
                 state.activeLayer = nextLayer;
@@ -830,6 +852,19 @@
         hudShuffle.addEventListener('change', () => {
             state.settings.shuffle = hudShuffle.checked;
             localStorage.setItem('slider_shuffle', state.settings.shuffle);
+            
+            // 즉시 순서 변경 반영
+            if (state.images && state.images.length > 0) {
+                if (state.settings.shuffle) {
+                    shuffleArray(state.images);
+                } else {
+                    // 파일명 기준 정렬 복구 (숫자 포함 지능형 정렬)
+                    state.images.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+                }
+                // 목록이 바뀌었으므로 현재 인덱스를 현재 이미지에 맞게 재조정하거나 0부터 시작
+                // 여기서는 안전하게 처음부터 다시 순회하도록 인덱스만 초기화 (현재 이미지는 유지)
+                state.currentIndex = state.images.findIndex(img => img.name === document.getElementById('current-info').textContent);
+            }
         });
 
         function applyLiveStyles() {
